@@ -25,12 +25,12 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (a6779d8)
 
 ## Phase 3: Antigravity SDK Integration & Review Logic (TDD)
-- [~] **Task: Write Tests for Antigravity Engine Integration (Red Phase)**
-  - [ ] Create `tests/test_review_engine.py`
-  - [ ] Write unit tests for leasing/initializing an `Agent` using `LocalAgentConfig`
-  - [ ] Write unit tests for parsing the agent's output and extracting specific review comments
-  - [ ] Verify that pytest runs and these new tests fail
-- [ ] Task: Implement Antigravity Review Engine (Green Phase)
+- [x] **Task: Write Tests for Antigravity Engine Integration (Red Phase)** (4c74477)
+  - [x] Create `tests/test_review_engine.py`
+  - [x] Write unit tests for leasing/initializing an `Agent` using `LocalAgentConfig`
+  - [x] Write unit tests for parsing the agent's output and extracting specific review comments
+  - [x] Verify that pytest runs and these new tests fail
+- [~] **Task: Implement Antigravity Review Engine (Green Phase)**
   - [ ] Implement `src/review_engine.py` to interface with the `google-antigravity` SDK
   - [ ] Implement auto-generation of settings configuration (`~/.gemini/antigravity-cli/settings.json`) at runtime
   - [ ] Implement review logic to feed PR diff segments to the agent and collect reviews

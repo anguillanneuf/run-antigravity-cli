@@ -1,6 +1,7 @@
+"""Unit tests for the GitHub REST API client and action event parsing utilities."""
+
 import os
 import json
-import pytest
 from unittest.mock import patch, mock_open, MagicMock
 from src.github_client import (
     GitHubClient,
@@ -47,6 +48,7 @@ index e69de29..83f124c 100644
 """
 
 
+# pylint: disable=unused-argument
 @patch.dict(os.environ, {
     "GITHUB_EVENT_NAME": "pull_request",
     "GITHUB_REPOSITORY": "google/run-antigravity-cli",
@@ -56,7 +58,7 @@ index e69de29..83f124c 100644
 def test_parse_pull_request_event(mock_file):
     """Verify parsing of pull_request event context."""
     os.environ["GITHUB_EVENT_PATH"] = "/tmp/event.json"
-    
+
     context = GitHubEventContext.from_env()
     assert context.event_name == "pull_request"
     assert context.repo_owner == "google"
@@ -76,7 +78,7 @@ def test_parse_pull_request_event(mock_file):
 def test_parse_push_event(mock_file):
     """Verify parsing of push event context."""
     os.environ["GITHUB_EVENT_PATH"] = "/tmp/event.json"
-    
+
     context = GitHubEventContext.from_env()
     assert context.event_name == "push"
     assert context.pr_number is None
@@ -93,7 +95,7 @@ def test_parse_push_event(mock_file):
 def test_parse_issue_comment_event(mock_file):
     """Verify parsing of issue_comment trigger payload."""
     os.environ["GITHUB_EVENT_PATH"] = "/tmp/event.json"
-    
+
     context = GitHubEventContext.from_env()
     assert context.event_name == "issue_comment"
     assert context.pr_number == 42
@@ -103,7 +105,7 @@ def test_parse_issue_comment_event(mock_file):
 def test_parse_diff_to_changed_lines():
     """Verify parsing unified diff patch and mapping added/modified lines."""
     changed_lines = parse_diff_to_changed_lines(MOCK_DIFF)
-    
+
     # Assert src/entrypoint.py was changed
     assert "src/entrypoint.py" in changed_lines
     # Lines 2, 3, 4, 5 were added/modified in the new file
@@ -121,14 +123,15 @@ def test_fetch_pr_diff(mock_get):
 
     client = GitHubClient(token="gh-token-123", repo="google/run-antigravity-cli")
     diff_text = client.fetch_pr_diff(pr_number=42)
-    
+
     assert diff_text == MOCK_DIFF
     mock_get.assert_called_once_with(
         "https://api.github.com/repos/google/run-antigravity-cli/pulls/42",
         headers={
             "Authorization": "Bearer gh-token-123",
             "Accept": "application/vnd.github.v3.diff"
-        }
+        },
+        timeout=10
     )
 
 
@@ -143,18 +146,23 @@ def test_post_review_comments(mock_post):
     comments = [
         {"path": "src/entrypoint.py", "line": 4, "body": "Great function, but needs a docstring!"}
     ]
-    
-    success = client.post_review_comments(pr_number=42, comments=comments, body="Antigravity Code Review Results")
-    
+
+    success = client.post_review_comments(
+        pr_number=42,
+        comments=comments,
+        body="Antigravity Code Review Results"
+    )
+
     assert success is True
     mock_post.assert_called_once()
-    
+
     # Verify mock post arguments
     args, kwargs = mock_post.call_args
     assert args[0] == "https://api.github.com/repos/google/run-antigravity-cli/pulls/42/reviews"
     assert kwargs["headers"]["Authorization"] == "Bearer gh-token-123"
     assert kwargs["headers"]["Accept"] == "application/vnd.github.v3+json"
-    
+    assert kwargs["timeout"] == 10
+
     payload = kwargs["json"]
     assert payload["event"] == "COMMENT"
     assert payload["body"] == "Antigravity Code Review Results"

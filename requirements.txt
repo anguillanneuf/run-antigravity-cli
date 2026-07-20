@@ -1,0 +1,7 @@
+google-antigravity
+requests
+PyGithub
+pytest
+pytest-cov
+pylint
+black

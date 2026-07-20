@@ -131,7 +131,7 @@ def test_fetch_pr_diff(mock_get):
             "Authorization": "Bearer gh-token-123",
             "Accept": "application/vnd.github.v3.diff"
         },
-        timeout=10
+        timeout=20
     )
 
 
@@ -161,7 +161,7 @@ def test_post_review_comments(mock_post):
     assert args[0] == "https://api.github.com/repos/google/run-antigravity-cli/pulls/42/reviews"
     assert kwargs["headers"]["Authorization"] == "Bearer gh-token-123"
     assert kwargs["headers"]["Accept"] == "application/vnd.github.v3+json"
-    assert kwargs["timeout"] == 10
+    assert kwargs["timeout"] == 20
 
     payload = kwargs["json"]
     assert payload["event"] == "COMMENT"

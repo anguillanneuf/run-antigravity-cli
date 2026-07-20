@@ -139,7 +139,7 @@ class GitHubClient:
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/vnd.github.v3.diff"
         }
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=20)
         response.raise_for_status()
         return response.text
 
@@ -167,5 +167,5 @@ class GitHubClient:
             "comments": api_comments
         }
 
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response = requests.post(url, headers=headers, json=payload, timeout=20)
         return response.status_code in (200, 201)

@@ -10,7 +10,7 @@
   - [x] Define composite steps (installing Python, installing packages, invoking entrypoint)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (0289bd8)
 
-## Phase 2: GitHub API Client & Event Parsing (TDD)
+## Phase 2: GitHub API Client & Event Parsing (TDD) [checkpoint: a6779d8]
 - [x] **Task: Write Tests for GitHub Event Parsing & API Client (Red Phase)** (2f591c3)
   - [x] Create `tests/test_github_client.py`
   - [x] Write unit tests for parsing `pull_request`, `push`, and `issue_comment` payloads
@@ -22,7 +22,7 @@
   - [x] Implement event-parsing logic to decode GITHUB_EVENT_PATH payload
   - [x] Implement REST API calls using `requests` to securely post review comments
   - [x] Run pytest to confirm all tests now pass
-- [~] **Task: Phase Verification & Checkpoint (Refer to workflow.md)**
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (a6779d8)
 
 ## Phase 3: Antigravity SDK Integration & Review Logic (TDD)
 - [ ] Task: Write Tests for Antigravity Engine Integration (Red Phase)

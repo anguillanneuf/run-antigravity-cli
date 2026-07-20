@@ -5,9 +5,9 @@
   - [x] Create directories `src/` and `tests/`
   - [x] Create `requirements.txt` with base dependencies (`google-antigravity`, `requests`, `PyGithub`)
   - [x] Configure Python virtual environment files
-- [ ] Task: Define Action Metadata (`action.yml`)
-  - [ ] Declare input parameters (`api-key`, `github-token`, `custom-prompt`, `fail-on-error`)
-  - [ ] Define composite steps (installing Python, installing packages, invoking entrypoint)
+- [x] **Task: Define Action Metadata (`action.yml`)** (8148795)
+  - [x] Declare input parameters (`api-key`, `github-token`, `custom-prompt`, `fail-on-error`)
+  - [x] Define composite steps (installing Python, installing packages, invoking entrypoint)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: GitHub API Client & Event Parsing (TDD)

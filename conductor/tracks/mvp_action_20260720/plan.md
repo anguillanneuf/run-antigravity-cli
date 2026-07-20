@@ -17,12 +17,12 @@
   - [x] Write unit tests for fetching PR patch/diff, parsing files, and mapping changed line ranges
   - [x] Write unit tests for posting inline comments using GitHub Review endpoints
   - [x] Verify that pytest runs and these new tests fail
-- [~] **Task: Implement GitHub Event Parsing & API Client (Green Phase)**
-  - [ ] Implement `src/github_client.py` to retrieve PR diff patches and map file line ranges
-  - [ ] Implement event-parsing logic to decode GITHUB_EVENT_PATH payload
-  - [ ] Implement REST API calls using `requests` to securely post review comments
-  - [ ] Run pytest to confirm all tests now pass
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] **Task: Implement GitHub Event Parsing & API Client (Green Phase)** (c9b260a)
+  - [x] Implement `src/github_client.py` to retrieve PR diff patches and map file line ranges
+  - [x] Implement event-parsing logic to decode GITHUB_EVENT_PATH payload
+  - [x] Implement REST API calls using `requests` to securely post review comments
+  - [x] Run pytest to confirm all tests now pass
+- [~] **Task: Phase Verification & Checkpoint (Refer to workflow.md)**
 
 ## Phase 3: Antigravity SDK Integration & Review Logic (TDD)
 - [ ] Task: Write Tests for Antigravity Engine Integration (Red Phase)

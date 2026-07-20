@@ -25,7 +25,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (a6779d8)
 
 ## Phase 3: Antigravity SDK Integration & Review Logic (TDD)
-- [ ] Task: Write Tests for Antigravity Engine Integration (Red Phase)
+- [~] **Task: Write Tests for Antigravity Engine Integration (Red Phase)**
   - [ ] Create `tests/test_review_engine.py`
   - [ ] Write unit tests for leasing/initializing an `Agent` using `LocalAgentConfig`
   - [ ] Write unit tests for parsing the agent's output and extracting specific review comments

@@ -1,0 +1,51 @@
+name: 'Run Antigravity CLI'
+description: 'Automate code reviews, security scans, and PR gating using the Google Antigravity CLI and Python SDK'
+branding:
+  icon: 'shield'
+  color: 'blue'
+inputs:
+  api-key:
+    description: 'Google Antigravity/Gemini API key (optional if using GCP OIDC/ADC)'
+    required: false
+  github-token:
+    description: 'GitHub token for reading PR changes and posting comments'
+    required: true
+    default: '${{ github.token }}'
+  custom-prompt:
+    description: 'Custom instructions/prompt to guide the AI reviewer'
+    required: false
+  fail-on-error:
+    description: 'Whether to fail the workflow run if the review agent encounters an error'
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
+
+    - name: Run Antigravity Review Agent
+      shell: bash
+      env:
+        INPUT_API_KEY: ${{ inputs.api-key }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_CUSTOM_PROMPT: ${{ inputs.custom-prompt }}
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+      run: |
+        python src/entrypoint.py

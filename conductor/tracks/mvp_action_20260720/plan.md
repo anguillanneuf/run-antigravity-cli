@@ -50,7 +50,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (77f63cd)
 
 ## Phase 5: Live Verification & Self-Testing
-- [ ] Task: Create Self-Testing GitHub Workflow & Documentation
+- [~] **Task: Create Self-Testing GitHub Workflow & Documentation**
   - [ ] Create `.github/workflows/test.yml` calling our local custom action
   - [ ] Write detailed `README.md` explaining setup, parameters, and enterprise Workload Identity configuration
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)

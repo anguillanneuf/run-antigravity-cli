@@ -1,0 +1,49 @@
+name: 'Antigravity Self-Testing Workflow'
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write # Required for posting inline review comments
+  id-token: write      # Required for Google Cloud OIDC Workload Identity Federation
+
+jobs:
+  code-review:
+    name: 'Google Antigravity Code Review'
+    # Run review only for PR events or when /review is requested on PR comments
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/review'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------------------------------
+      # RECOMMENDED: Authenticate to Google Cloud via Workload Identity Federation
+      # This provides keyless, secure authentication to Gemini APIs without secrets.
+      # -------------------------------------------------------------------------
+      # - name: Authenticate to Google Cloud (OIDC)
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/YOUR_POOL/providers/YOUR_PROVIDER'
+      #     service_account: 'your-antigravity-sa@your-project.iam.gserviceaccount.com'
+
+      - name: Run Antigravity Review Agent
+        uses: ./
+        with:
+          # Optional: Use API key if not using Workload Identity Federation
+          api-key: ${{ secrets.GEMINI_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fail-on-error: true
+          custom-prompt: |
+            Please analyze the following pull request with extreme care. Focus on:
+            1. Security vulnerabilities (OWASP Top 10, credential leaks, unsafe imports).
+            2. Code quality, optimization, and potential bugs.
+            3. Ensure suggestion blocks are strictly correct and actionable.

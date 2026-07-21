@@ -30,12 +30,12 @@
   - [x] Write unit tests for leasing/initializing an `Agent` using `LocalAgentConfig`
   - [x] Write unit tests for parsing the agent's output and extracting specific review comments
   - [x] Verify that pytest runs and these new tests fail
-- [~] **Task: Implement Antigravity Review Engine (Green Phase)**
-  - [ ] Implement `src/review_engine.py` to interface with the `google-antigravity` SDK
-  - [ ] Implement auto-generation of settings configuration (`~/.gemini/antigravity-cli/settings.json`) at runtime
-  - [ ] Implement review logic to feed PR diff segments to the agent and collect reviews
-  - [ ] Implement markdown validation (verifying suggestions use ` ```suggestion ` blocks)
-  - [ ] Run pytest to confirm all tests now pass
+- [x] **Task: Implement Antigravity Review Engine (Green Phase)** (7d3c31f)
+  - [x] Implement `src/review_engine.py` to interface with the `google-antigravity` SDK
+  - [x] Implement auto-generation of settings configuration (`~/.gemini/antigravity-cli/settings.json`) at runtime by appending new  settings not rewriting or deleting existing settings 
+  - [x] Implement review logic to feed PR diff segments to the agent and collect reviews
+  - [x] Implement markdown validation (verifying suggestions use ` ```suggestion ` blocks)
+  - [x] Run pytest to confirm all tests now pass
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Main Entry Point & Orchestration Integration (TDD)

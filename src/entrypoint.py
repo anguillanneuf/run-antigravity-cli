@@ -17,12 +17,16 @@ async def main_async() -> int:  # pylint: disable=too-many-locals,too-many-retur
     Returns:
         int: The process exit code (0 for success/soft-pass, 1 for critical failure).
     """
-    # 1. Retrieve action inputs
-    api_key = os.environ.get("INPUT_API-KEY")
-    github_token = os.environ.get("INPUT_GITHUB-TOKEN")
-    fail_on_error_str = os.environ.get("INPUT_FAIL-ON-ERROR", "true").strip().lower()
+    # 1. Retrieve action inputs (supporting both hyphens and underscores)
+    api_key = os.environ.get("INPUT_API-KEY") or os.environ.get("INPUT_API_KEY")
+    github_token = os.environ.get("INPUT_GITHUB-TOKEN") or os.environ.get("INPUT_GITHUB_TOKEN")
+    fail_on_error_str = (
+        os.environ.get("INPUT_FAIL-ON-ERROR")
+        or os.environ.get("INPUT_FAIL_ON_ERROR")
+        or "true"
+    ).strip().lower()
     fail_on_error = fail_on_error_str in ["true", "1", "yes"]
-    custom_prompt = os.environ.get("INPUT_CUSTOM-PROMPT")
+    custom_prompt = os.environ.get("INPUT_CUSTOM-PROMPT") or os.environ.get("INPUT_CUSTOM_PROMPT")
 
     print("🤖 Google Antigravity Code Review Action starting...")
 

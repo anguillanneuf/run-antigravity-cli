@@ -39,7 +39,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (bf2732f)
 
 ## Phase 4: Main Entry Point & Orchestration Integration (TDD)
-- [ ] Task: Write Integration and Local E2E Tests (Red Phase)
+- [~] **Task: Write Integration and Local E2E Tests (Red Phase)**
   - [ ] Add integration tests in `tests/test_entrypoint.py` to mock and link both modules
   - [ ] Verify end-to-end orchestration from event-trigger parsing to posting the comments
   - [ ] Verify tests fail as expected

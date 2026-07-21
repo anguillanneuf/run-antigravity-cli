@@ -30,13 +30,13 @@ def test_settings_generation(mock_file, mock_makedirs, mock_exists):
     """Verify that settings.json is correctly generated when an API key is supplied."""
     mock_exists.return_value = False
     engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
-    
+
     # Trigger setting configuration generation
     engine.ensure_settings_configured()
-    
+
     mock_makedirs.assert_called_once()
     mock_file.assert_called_once()
-    
+
     # Verify exact written content
     handle = mock_file()
     written_data = "".join(call.args[0] for call in handle.write.call_args_list)
@@ -50,21 +50,29 @@ def test_settings_generation_preserves_existing(mock_makedirs, mock_exists):
     """Verify that settings.json is updated by preserving existing settings when an API key is supplied."""
     mock_exists.return_value = True
     engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
-    
+
     existing_data = '{"other_setting": "value-123"}'
-    
+
     # We mock open specifically so we can handle different behavior for 'r' and 'w'
     m = mock_open(read_data=existing_data)
     with patch("builtins.open", m):
         engine.ensure_settings_configured()
-        
+
     mock_makedirs.assert_called_once()
-    
+
     # Verify read was called with 'r'
-    m.assert_any_call(os.path.expanduser("~/.gemini/antigravity-cli/settings.json"), "r", encoding="utf-8")
+    m.assert_any_call(
+        os.path.expanduser("~/.gemini/antigravity-cli/settings.json"),
+        "r",
+        encoding="utf-8",
+    )
     # Verify write was called with 'w'
-    m.assert_any_call(os.path.expanduser("~/.gemini/antigravity-cli/settings.json"), "w", encoding="utf-8")
-    
+    m.assert_any_call(
+        os.path.expanduser("~/.gemini/antigravity-cli/settings.json"),
+        "w",
+        encoding="utf-8",
+    )
+
     # Gather written content
     handle = m()
     written_data = "".join(call.args[0] for call in handle.write.call_args_list)
@@ -82,9 +90,11 @@ async def test_review_engine_initialization(mock_config_cls, mock_agent_cls):
     mock_agent_instance.__aenter__.return_value = AsyncMock()
     mock_agent_cls.return_value = mock_agent_instance
 
-    engine = AntigravityReviewEngine(api_key="gemini-key-xyz", custom_prompt="Review style guide.")
-    
-    async with engine._lease_agent() as agent: # pylint: disable=protected-access
+    engine = AntigravityReviewEngine(
+        api_key="gemini-key-xyz", custom_prompt="Review style guide."
+    )
+
+    async with engine._lease_agent() as agent:  # pylint: disable=protected-access
         assert agent is not None
 
     mock_agent_cls.assert_called_once()
@@ -101,20 +111,30 @@ async def test_run_review_success(mock_agent_cls):
     mock_agent = AsyncMock()
     mock_agent_cls.return_value.__aenter__.return_value = mock_agent
 
-    mock_json_response = json.dumps([
-        {"path": "src/main.py", "line": 5, "body": "Add a docstring to this function."},
-        {"path": "src/main.py", "line": 10, "body": "Use constant instead of magic number."}
-    ])
+    mock_json_response = json.dumps(
+        [
+            {
+                "path": "src/main.py",
+                "line": 5,
+                "body": "Add a docstring to this function.",
+            },
+            {
+                "path": "src/main.py",
+                "line": 10,
+                "body": "Use constant instead of magic number.",
+            },
+        ]
+    )
     mock_agent.chat.return_value = MockAgentResponse([mock_json_response])
 
     engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
-    
-    changed_lines = {
-        "src/main.py": [1, 2, 3, 5]  # Line 10 is NOT changed
-    }
-    
-    comments = await engine.run_review(diff_text="mock-diff", changed_lines=changed_lines)
-    
+
+    changed_lines = {"src/main.py": [1, 2, 3, 5]}  # Line 10 is NOT changed
+
+    comments = await engine.run_review(
+        diff_text="mock-diff", changed_lines=changed_lines
+    )
+
     assert len(comments) == 1
     assert comments[0]["path"] == "src/main.py"
     assert comments[0]["line"] == 5
@@ -131,18 +151,20 @@ async def test_run_review_markdown_json_wrapping(mock_agent_cls):
     wrapped_response = (
         "Here are my review suggestions:\n"
         "```json\n"
-        '[\n'
+        "[\n"
         '  {"path": "src/main.py", "line": 3, "body": "Rename variable to avoid shadow shadow."}\n'
-        ']\n'
+        "]\n"
         "```"
     )
     mock_agent.chat.return_value = MockAgentResponse([wrapped_response])
 
     engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
-    
+
     changed_lines = {"src/main.py": [3]}
-    comments = await engine.run_review(diff_text="mock-diff", changed_lines=changed_lines)
-    
+    comments = await engine.run_review(
+        diff_text="mock-diff", changed_lines=changed_lines
+    )
+
     assert len(comments) == 1
     assert comments[0]["line"] == 3
     assert comments[0]["body"] == "Rename variable to avoid shadow shadow."
@@ -157,17 +179,19 @@ async def test_run_review_malformed_json_fallback(mock_agent_cls):
     mock_agent.chat.return_value = MockAgentResponse(["Not valid JSON or markdown."])
 
     engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
-    
+
     changed_lines = {"src/main.py": [3]}
-    comments = await engine.run_review(diff_text="mock-diff", changed_lines=changed_lines)
-    
+    comments = await engine.run_review(
+        diff_text="mock-diff", changed_lines=changed_lines
+    )
+
     assert comments == []
 
 
 def test_validate_markdown_suggestions():
     """Verify that _validate_markdown_suggestions correctly identifies and converts standard code blocks to suggestion blocks when appropriate."""
     engine = AntigravityReviewEngine()
-    
+
     # 1. Body containing a "suggest" keyword and a standard python code block should be converted
     body = "Consider using this helper function instead:\n```python\nreturn get_user_data()\n```"
     validated = engine._validate_markdown_suggestions(body)
@@ -182,7 +206,9 @@ def test_validate_markdown_suggestions():
     assert validated_already == body_already
 
     # 3. Body with no triggers should not be touched
-    body_no_trigger = "Check this general documentation block:\n```python\nprint('hello')\n```"
+    body_no_trigger = (
+        "Check this general documentation block:\n```python\nprint('hello')\n```"
+    )
     validated_no_trigger = engine._validate_markdown_suggestions(body_no_trigger)
     assert "```python" in validated_no_trigger
     assert "```suggestion" not in validated_no_trigger

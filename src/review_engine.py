@@ -8,16 +8,18 @@ from google.antigravity import Agent, LocalAgentConfig, CapabilitiesConfig
 
 DEFAULT_SYSTEM_INSTRUCTIONS = (
     "You are an elite automated code review agent. "
-    "Your objective is to perform high-quality, precise, and secure code reviews on Pull Request diffs.\n\n"
+    "Your objective is to perform high-quality, precise, and secure "
+    "code reviews on Pull Request diffs.\n\n"
     "Instructions:\n"
     "1. You will be provided with the raw unified diff format of the code changes.\n"
     "2. For any bug, security issue, styling inconsistency, or performance concern, "
     "you should generate a specific code review comment.\n"
     "3. Output format MUST be a raw JSON array of objects with exactly three fields:\n"
     "   - 'path': (string) the file path relative to repository root.\n"
-    "   - 'line': (integer) the exact line number in the target/new file where the issue/suggestion is.\n"
-    "   - 'body': (string) the markdown-formatted review suggestion. Include code blocks with suggestions if useful.\n"
-    "4. Do NOT output any conversational text, pleasantries, or preamble. Return ONLY the raw JSON array."
+    "   - 'line': (integer) the exact line number in the target/new file "
+    "where the suggestion is.\n"
+    "   - 'body': (string) the markdown suggestions. Include suggestion blocks if useful.\n"
+    "4. Do NOT output any conversational text. Return ONLY the raw JSON array."
 )
 
 
@@ -29,7 +31,11 @@ class AntigravityReviewEngine:
         self.custom_prompt = custom_prompt
 
     def ensure_settings_configured(self):
-        """Generates or updates the local settings.json configuration file with API key credentials without erasing existing settings."""
+        """Generates or updates the local settings.json configuration file.
+
+        The settings.json is updated non-destructively by merging new fields
+        without erasing existing custom user configurations.
+        """
         settings_dir = os.path.expanduser("~/.gemini/antigravity-cli")
         os.makedirs(settings_dir, exist_ok=True)
         settings_path = os.path.join(settings_dir, "settings.json")
@@ -54,8 +60,7 @@ class AntigravityReviewEngine:
             instructions += f"\n\nCustom Guidelines:\n{self.custom_prompt}"
 
         config = LocalAgentConfig(
-            system_instructions=instructions,
-            capabilities=CapabilitiesConfig()
+            system_instructions=instructions, capabilities=CapabilitiesConfig()
         )
 
         async with Agent(config) as agent:
@@ -80,20 +85,18 @@ class AntigravityReviewEngine:
         try:
             async with self._lease_agent() as agent:
                 response = await agent.chat(prompt)
-                
+
                 # Gather all tokens asynchronously
-                text_response = ""
-                async for token in response:
-                    text_response += token
-                
+                text_response = "".join([token async for token in response])
+
                 raw_json = self._extract_json_from_response(text_response)
                 if not raw_json:
                     return []
-                
+
                 comments = json.loads(raw_json)
                 if not isinstance(comments, list):
                     return []
-                
+
                 return self._filter_valid_comments(comments, changed_lines)
         except (json.JSONDecodeError, RuntimeError, ValueError):
             return []
@@ -101,31 +104,45 @@ class AntigravityReviewEngine:
     def _extract_json_from_response(self, text):
         """Locates and extracts raw JSON arrays from conversational or markdown-wrapped LLM text."""
         # Check if the output is wrapped inside a ```json ... ``` block
-        match = re.search(r"```(?:json)?\s*(\[\s*\{.*\}\s*\])\s*```", text, re.DOTALL | re.IGNORECASE)
+        match = re.search(
+            r"```(?:json)?\s*(\[\s*\{.*\}\s*\])\s*```", text, re.DOTALL | re.IGNORECASE
+        )
         if match:
             return match.group(1).strip()
-        
+
         # Fallback to direct extraction of anything looking like a JSON array [ ... ]
         match = re.search(r"(\[\s*\{.*\}\s*\])", text, re.DOTALL)
         if match:
             return match.group(1).strip()
-        
+
         # Attempt to see if the whole text is a JSON array
         stripped = text.strip()
         if stripped.startswith("[") and stripped.endswith("]"):
             return stripped
-            
+
         return ""
 
     def _validate_markdown_suggestions(self, body):
-        """Ensures that any proposed code modifications in markdown blocks use the native ```suggestion block."""
+        """Ensures that code modifications use native suggestion blocks."""
         if not body:
             return body
 
         # Replace standard code blocks with ```suggestion if the body suggests a code change
         # and has a non-suggestion code block.
         lower_body = body.lower()
-        if any(keyword in lower_body for keyword in ["suggest", "replace", "instead", "consider", "change", "try", "use"]):
+        if any(
+            keyword in lower_body
+            for keyword in [
+                "suggest",
+                "replace",
+                "instead",
+                "consider",
+                "change",
+                "try",
+                "use",
+            ]
+        ):
+
             def replace_block(match):
                 lang = match.group(1)
                 content = match.group(2)
@@ -135,7 +152,9 @@ class AntigravityReviewEngine:
                 return f"```suggestion\n{content.strip()}\n```"
 
             # Regex to match code blocks
-            body = re.sub(r"```([a-zA-Z]*)\n(.*?)\n```", replace_block, body, flags=re.DOTALL)
+            body = re.sub(
+                r"```([a-zA-Z]*)\n(.*?)\n```", replace_block, body, flags=re.DOTALL
+            )
 
         return body
 
@@ -153,9 +172,7 @@ class AntigravityReviewEngine:
             # Check if this file was changed and if this line number was modified
             if path in changed_lines and int(line) in changed_lines[path]:
                 validated_body = self._validate_markdown_suggestions(str(body))
-                filtered.append({
-                    "path": path,
-                    "line": int(line),
-                    "body": validated_body
-                })
+                filtered.append(
+                    {"path": path, "line": int(line), "body": validated_body}
+                )
         return filtered

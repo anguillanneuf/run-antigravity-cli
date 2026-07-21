@@ -19,7 +19,7 @@ class GitHubEventContext:
         pr_number=None,
         head_sha=None,
         base_sha=None,
-        is_review_requested=False
+        is_review_requested=False,
     ):
         self.event_name = event_name
         self.repo_owner = repo_owner
@@ -82,7 +82,7 @@ class GitHubEventContext:
             pr_number=pr_number,
             head_sha=head_sha,
             base_sha=base_sha,
-            is_review_requested=is_review_requested
+            is_review_requested=is_review_requested,
         )
 
 
@@ -137,7 +137,7 @@ class GitHubClient:
         url = f"{self.base_url}/pulls/{pr_number}"
         headers = {
             "Authorization": f"Bearer {self.token}",
-            "Accept": "application/vnd.github.v3.diff"
+            "Accept": "application/vnd.github.v3.diff",
         }
         response = requests.get(url, headers=headers, timeout=20)
         response.raise_for_status()
@@ -149,23 +149,21 @@ class GitHubClient:
         headers = {
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/vnd.github.v3+json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         api_comments = []
         for c in comments:
-            api_comments.append({
-                "path": c["path"],
-                "line": c["line"],
-                "side": "RIGHT",
-                "body": c["body"]
-            })
+            api_comments.append(
+                {
+                    "path": c["path"],
+                    "line": c["line"],
+                    "side": "RIGHT",
+                    "body": c["body"],
+                }
+            )
 
-        payload = {
-            "event": "COMMENT",
-            "body": body,
-            "comments": api_comments
-        }
+        payload = {"event": "COMMENT", "body": body, "comments": api_comments}
 
         response = requests.post(url, headers=headers, json=payload, timeout=20)
         return response.status_code in (200, 201)

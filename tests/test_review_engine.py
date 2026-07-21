@@ -23,10 +23,12 @@ class MockAgentResponse:
         return self.tokens.pop(0)
 
 
+@patch("os.path.exists")
 @patch("os.makedirs")
 @patch("builtins.open", new_callable=mock_open)
-def test_settings_generation(mock_file, mock_makedirs):
+def test_settings_generation(mock_file, mock_makedirs, mock_exists):
     """Verify that settings.json is correctly generated when an API key is supplied."""
+    mock_exists.return_value = False
     engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
     
     # Trigger setting configuration generation
@@ -40,6 +42,35 @@ def test_settings_generation(mock_file, mock_makedirs):
     written_data = "".join(call.args[0] for call in handle.write.call_args_list)
     parsed_written = json.loads(written_data)
     assert parsed_written["gemini_api_key"] == "gemini-key-xyz"
+
+
+@patch("os.path.exists")
+@patch("os.makedirs")
+def test_settings_generation_preserves_existing(mock_makedirs, mock_exists):
+    """Verify that settings.json is updated by preserving existing settings when an API key is supplied."""
+    mock_exists.return_value = True
+    engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
+    
+    existing_data = '{"other_setting": "value-123"}'
+    
+    # We mock open specifically so we can handle different behavior for 'r' and 'w'
+    m = mock_open(read_data=existing_data)
+    with patch("builtins.open", m):
+        engine.ensure_settings_configured()
+        
+    mock_makedirs.assert_called_once()
+    
+    # Verify read was called with 'r'
+    m.assert_any_call(os.path.expanduser("~/.gemini/antigravity-cli/settings.json"), "r", encoding="utf-8")
+    # Verify write was called with 'w'
+    m.assert_any_call(os.path.expanduser("~/.gemini/antigravity-cli/settings.json"), "w", encoding="utf-8")
+    
+    # Gather written content
+    handle = m()
+    written_data = "".join(call.args[0] for call in handle.write.call_args_list)
+    parsed_written = json.loads(written_data)
+    assert parsed_written["gemini_api_key"] == "gemini-key-xyz"
+    assert parsed_written["other_setting"] == "value-123"
 
 
 @patch("src.review_engine.Agent")
@@ -131,3 +162,27 @@ async def test_run_review_malformed_json_fallback(mock_agent_cls):
     comments = await engine.run_review(diff_text="mock-diff", changed_lines=changed_lines)
     
     assert comments == []
+
+
+def test_validate_markdown_suggestions():
+    """Verify that _validate_markdown_suggestions correctly identifies and converts standard code blocks to suggestion blocks when appropriate."""
+    engine = AntigravityReviewEngine()
+    
+    # 1. Body containing a "suggest" keyword and a standard python code block should be converted
+    body = "Consider using this helper function instead:\n```python\nreturn get_user_data()\n```"
+    validated = engine._validate_markdown_suggestions(body)
+    assert "```suggestion" in validated
+    assert "```python" not in validated
+    assert "return get_user_data()" in validated
+
+    # 2. Body containing an already formatted ```suggestion block should be preserved
+    body_already = "Try this:\n```suggestion\nreturn get_user_data()\n```"
+    validated_already = engine._validate_markdown_suggestions(body_already)
+    assert "```suggestion" in validated_already
+    assert validated_already == body_already
+
+    # 3. Body with no triggers should not be touched
+    body_no_trigger = "Check this general documentation block:\n```python\nprint('hello')\n```"
+    validated_no_trigger = engine._validate_markdown_suggestions(body_no_trigger)
+    assert "```python" in validated_no_trigger
+    assert "```suggestion" not in validated_no_trigger

@@ -38,7 +38,7 @@
   - [x] Run pytest to confirm all tests now pass
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (bf2732f)
 
-## Phase 4: Main Entry Point & Orchestration Integration (TDD)
+## Phase 4: Main Entry Point & Orchestration Integration (TDD) [checkpoint: 77f63cd]
 - [x] **Task: Write Integration and Local E2E Tests (Red Phase)** (1d6e483)
   - [x] Add integration tests in `tests/test_entrypoint.py` to mock and link both modules
   - [x] Verify end-to-end orchestration from event-trigger parsing to posting the comments
@@ -47,7 +47,7 @@
   - [x] Complete `src/entrypoint.py` coordinating the Github Client and Review Engine
   - [x] Add local simulation script `tests/simulate_run.py` to let developers test the full flow on mock local PRs
   - [x] Ensure full test suite passes with >80% test coverage
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (77f63cd)
 
 ## Phase 5: Live Verification & Self-Testing
 - [ ] Task: Create Self-Testing GitHub Workflow & Documentation

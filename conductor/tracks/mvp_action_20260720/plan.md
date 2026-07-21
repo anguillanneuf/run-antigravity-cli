@@ -24,7 +24,7 @@
   - [x] Run pytest to confirm all tests now pass
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (a6779d8)
 
-## Phase 3: Antigravity SDK Integration & Review Logic (TDD)
+## Phase 3: Antigravity SDK Integration & Review Logic (TDD) [checkpoint: bf2732f]
 - [x] **Task: Write Tests for Antigravity Engine Integration (Red Phase)** (4c74477)
   - [x] Create `tests/test_review_engine.py`
   - [x] Write unit tests for leasing/initializing an `Agent` using `LocalAgentConfig`
@@ -36,7 +36,7 @@
   - [x] Implement review logic to feed PR diff segments to the agent and collect reviews
   - [x] Implement markdown validation (verifying suggestions use ` ```suggestion ` blocks)
   - [x] Run pytest to confirm all tests now pass
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (bf2732f)
 
 ## Phase 4: Main Entry Point & Orchestration Integration (TDD)
 - [ ] Task: Write Integration and Local E2E Tests (Red Phase)

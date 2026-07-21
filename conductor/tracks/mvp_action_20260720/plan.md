@@ -43,10 +43,10 @@
   - [x] Add integration tests in `tests/test_entrypoint.py` to mock and link both modules
   - [x] Verify end-to-end orchestration from event-trigger parsing to posting the comments
   - [x] Verify tests fail as expected
-- [~] **Task: Implement Main Orchestration Loop (Green Phase)**
-  - [ ] Complete `src/entrypoint.py` coordinating the Github Client and Review Engine
-  - [ ] Add local simulation script `tests/simulate_run.py` to let developers test the full flow on mock local PRs
-  - [ ] Ensure full test suite passes with >80% test coverage
+- [x] **Task: Implement Main Orchestration Loop (Green Phase)** (868e415)
+  - [x] Complete `src/entrypoint.py` coordinating the Github Client and Review Engine
+  - [x] Add local simulation script `tests/simulate_run.py` to let developers test the full flow on mock local PRs
+  - [x] Ensure full test suite passes with >80% test coverage
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 5: Live Verification & Self-Testing

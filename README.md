@@ -70,6 +70,29 @@ jobs:
 
 ---
 
+## 🔗 Usage in External Repositories
+
+Because this is a standard custom GitHub Action, any project on GitHub can reference and utilize this review agent directly without duplicating any of its code!
+
+To run this code review agent on an external repository:
+
+1. **Configure Repository Secrets**: Add `GEMINI_API_KEY` (or configure Google Cloud OIDC trust) in your external project's settings.
+2. **Create Workflow File**: Create `.github/workflows/code-review.yml` in your external repository.
+3. **Reference This Action**: Specify the repository path of this action (`uses: <owner>/<repo>@<ref>`) under the job step:
+
+```yaml
+      - name: Run Antigravity Review Agent
+        uses: google/run-antigravity-cli@v1 # Point to this repo name and tag/branch
+        with:
+          api-key: ${{ secrets.GEMINI_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fail-on-error: true
+```
+
+That's it! When a Pull Request is opened in the external repository, GitHub will automatically check out this action, load its composite steps, install dependencies, and run the review under the external repository's context.
+
+---
+
 ## 🔒 Secure Enterprise Setup (Workload Identity Federation)
 
 For enterprise security compliance, we highly recommend using **Google Cloud Workload Identity Federation (OIDC)** instead of long-lived API keys. This enables passwordless authentication using GitHub's short-lived OIDC tokens.

@@ -48,5 +48,7 @@ runs:
         INPUT_CUSTOM_PROMPT: ${{ inputs.custom-prompt }}
         INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
         PYTHONPATH: ${{ github.action_path }}
+        GEMINI_API_KEY: ${{ inputs.api-key }}                                                 
+        GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         python ${{ github.action_path }}/src/entrypoint.py

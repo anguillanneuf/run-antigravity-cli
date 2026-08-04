@@ -8,6 +8,12 @@ from src.github_client import (
     GitHubClient,
     parse_diff_to_changed_lines,
 )
+
+from pathlib import Path                                                                  
+                                                                                              
+# Add the repository root to sys.path so 'from src....' imports work                      
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  
+
 from src.review_engine import AntigravityReviewEngine
 
 

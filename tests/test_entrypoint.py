@@ -82,7 +82,12 @@ async def test_entrypoint_pull_request_success(
         mock_parse_diff.assert_called_once_with("mock-diff-patch")
 
         mock_engine_cls.assert_called_once_with(
-            api_key="mock-api-key-123", custom_prompt="Review carefully."
+            api_key="mock-api-key-123",
+            workload_identity_provider=None,
+            service_account=None,
+            gcp_project_id=None,
+            gcp_location=None,
+            custom_prompt="Review carefully.",
         )
         mock_engine.run_review.assert_called_once_with(
             "mock-diff-patch", {"src/main.py": [5]}

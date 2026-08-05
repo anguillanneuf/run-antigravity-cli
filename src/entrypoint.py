@@ -25,14 +25,30 @@ async def main_async() -> int:  # pylint: disable=too-many-locals,too-many-retur
     """
     # 1. Retrieve action inputs (supporting both hyphens and underscores)
     api_key = os.environ.get("INPUT_API-KEY") or os.environ.get("INPUT_API_KEY")
-    github_token = os.environ.get("INPUT_GITHUB-TOKEN") or os.environ.get("INPUT_GITHUB_TOKEN")
+    workload_identity_provider = os.environ.get(
+        "INPUT_WORKLOAD-IDENTITY-PROVIDER"
+    ) or os.environ.get("INPUT_WORKLOAD_IDENTITY_PROVIDER")
+    service_account = os.environ.get("INPUT_SERVICE-ACCOUNT") or os.environ.get(
+        "INPUT_SERVICE_ACCOUNT"
+    )
+    gcp_project_id = os.environ.get("INPUT_GCP-PROJECT-ID") or os.environ.get(
+        "INPUT_GCP_PROJECT_ID"
+    )
+    gcp_location = os.environ.get("INPUT_GCP-LOCATION") or os.environ.get(
+        "INPUT_GCP_LOCATION"
+    )
+    github_token = os.environ.get("INPUT_GITHUB-TOKEN") or os.environ.get(
+        "INPUT_GITHUB_TOKEN"
+    )
     fail_on_error_str = (
         os.environ.get("INPUT_FAIL-ON-ERROR")
         or os.environ.get("INPUT_FAIL_ON_ERROR")
         or "true"
     ).strip().lower()
     fail_on_error = fail_on_error_str in ["true", "1", "yes"]
-    custom_prompt = os.environ.get("INPUT_CUSTOM-PROMPT") or os.environ.get("INPUT_CUSTOM_PROMPT")
+    custom_prompt = os.environ.get("INPUT_CUSTOM-PROMPT") or os.environ.get(
+        "INPUT_CUSTOM_PROMPT"
+    )
 
     print("🤖 Google Antigravity Code Review Action starting...")
 
@@ -84,7 +100,14 @@ async def main_async() -> int:  # pylint: disable=too-many-locals,too-many-retur
         )
 
         # 5. Execute Antigravity Review Engine
-        engine = AntigravityReviewEngine(api_key=api_key, custom_prompt=custom_prompt)
+        engine = AntigravityReviewEngine(
+            api_key=api_key,
+            workload_identity_provider=workload_identity_provider,
+            service_account=service_account,
+            gcp_project_id=gcp_project_id,
+            gcp_location=gcp_location,
+            custom_prompt=custom_prompt,
+        )
         comments = await engine.run_review(diff_text, changed_lines)
 
         if not comments:

@@ -5,12 +5,25 @@ branding:
   color: 'blue'
 inputs:
   api-key:
-    description: 'Google Antigravity/Gemini API key (optional if using GCP OIDC/ADC)'
+    description: 'Gemini API Key for authentication (optional if using Workload Identity Federation)'
+    required: false
+  workload-identity-provider:
+    description: 'GCP Workload Identity Provider resource name for keyless authentication'
+    required: false
+  service-account:
+    description: 'GCP Service Account email to impersonate when using Workload Identity Federation'
     required: false
   github-token:
     description: 'GitHub token for reading PR changes and posting comments'
     required: true
     default: '${{ github.token }}'
+  gcp-project-id:
+    description: 'GCP project ID for OIDC authentication (optional if using API key)'
+    required: false
+  gcp-location:
+    description: 'GCP location for OIDC authentication (optional if using API key)'
+    required: true
+    default: 'global'
   custom-prompt:
     description: 'Custom instructions/prompt to guide the AI reviewer'
     required: false
@@ -44,11 +57,15 @@ runs:
       shell: bash
       env:
         INPUT_API_KEY: ${{ inputs.api-key }}
+        INPUT_WORKLOAD_IDENTITY_PROVIDER: ${{ inputs.workload-identity-provider }}
+        INPUT_SERVICE_ACCOUNT: ${{ inputs.service-account }}
+        INPUT_GCP_PROJECT_ID: ${{ inputs.gcp-project-id }}
+        INPUT_GCP_LOCATION: ${{ inputs.gcp-location }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_CUSTOM_PROMPT: ${{ inputs.custom-prompt }}
         INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
         PYTHONPATH: ${{ github.action_path }}
-        GEMINI_API_KEY: ${{ inputs.api-key }}                                                 
+        GEMINI_API_KEY: ${{ inputs.api-key }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         python ${{ github.action_path }}/src/entrypoint.py

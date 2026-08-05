@@ -255,3 +255,60 @@ def test_entrypoint_main_sync(mock_exit, mock_main_async):
     main()
     mock_main_async.assert_called_once()
     mock_exit.assert_called_once_with(42)
+
+
+@pytest.mark.asyncio
+@patch("src.entrypoint.GitHubEventContext.from_env")
+@patch("src.entrypoint.GitHubClient")
+@patch("src.entrypoint.AntigravityReviewEngine")
+async def test_entrypoint_wif_auth_inputs(
+    mock_engine_cls, mock_client_cls, mock_context_from_env
+):
+    """Verify that WIF inputs (provider, service account, GCP project ID/location) are parsed and forwarded to AntigravityReviewEngine."""
+    from src.entrypoint import main_async
+
+    with patch.dict(
+        os.environ,
+        {
+            "GITHUB_EVENT_NAME": "pull_request",
+            "GITHUB_EVENT_PATH": "/tmp/event.json",
+            "GITHUB_REPOSITORY": "google/run-antigravity-cli",
+            "INPUT_WORKLOAD_IDENTITY_PROVIDER": "projects/123/locations/global/workloadIdentityPools/pool/providers/provider",
+            "INPUT_SERVICE_ACCOUNT": "sa@project.iam.gserviceaccount.com",
+            "INPUT_GCP_PROJECT_ID": "my-gcp-project",
+            "INPUT_GCP_LOCATION": "us-central1",
+            "INPUT_API_KEY": "fallback-key",
+            "INPUT_GITHUB_TOKEN": "mock-token",
+        },
+        clear=True,
+    ):
+        mock_context = MagicMock(spec=GitHubEventContext)
+        mock_context.event_name = "pull_request"
+        mock_context.pr_number = 42
+        mock_context.repo_owner = "google"
+        mock_context.repo_name = "run-antigravity-cli"
+        mock_context.token = "mock-token"
+        mock_context_from_env.return_value = mock_context
+
+        mock_client = MagicMock(spec=GitHubClient)
+        mock_client.fetch_pr_diff.return_value = "mock-diff"
+        mock_client_cls.return_value = mock_client
+
+        mock_engine = MagicMock(spec=AntigravityReviewEngine)
+        mock_engine.run_review = AsyncMock(return_value=[])
+        mock_engine_cls.return_value = mock_engine
+
+        with patch("src.entrypoint.parse_diff_to_changed_lines") as mock_parse_diff:
+            mock_parse_diff.return_value = {"main.py": [1]}
+            exit_code = await main_async()
+            assert exit_code == 0
+
+            mock_engine_cls.assert_called_once_with(
+                api_key="fallback-key",
+                workload_identity_provider="projects/123/locations/global/workloadIdentityPools/pool/providers/provider",
+                service_account="sa@project.iam.gserviceaccount.com",
+                gcp_project_id="my-gcp-project",
+                gcp_location="us-central1",
+                custom_prompt=None,
+            )
+

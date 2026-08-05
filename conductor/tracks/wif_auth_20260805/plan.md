@@ -6,7 +6,7 @@
 
 ## Phase 2: Review Engine Authentication & Settings (TDD)
 - [x] Task: Write failing unit tests in `tests/test_review_engine.py` for WIF/ADC setting generation and fallback logic. (9ccd61d)
-- [~] Task: Update `AntigravityReviewEngine` in `src/review_engine.py` to support WIF credentials and fallback to Gemini API Key.
+- [x] Task: Update `AntigravityReviewEngine` in `src/review_engine.py` to support WIF credentials and fallback to Gemini API Key. (20386d1)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Entrypoint Orchestration & Test Verification (TDD)

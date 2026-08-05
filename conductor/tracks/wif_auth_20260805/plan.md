@@ -10,7 +10,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Entrypoint Orchestration & Test Verification (TDD)
-- [ ] Task: Write failing unit tests in `tests/test_entrypoint.py` for parsing WIF inputs.
-- [ ] Task: Update `src/entrypoint.py` to parse WIF env vars and pass to `AntigravityReviewEngine`.
+- [x] Task: Write failing unit tests in `tests/test_entrypoint.py` for parsing WIF inputs. (b1c7d9f)
+- [~] Task: Update `src/entrypoint.py` to parse WIF env vars and pass to `AntigravityReviewEngine`.
 - [ ] Task: Rerun full pytest test suite and verify test coverage (>80%).
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)

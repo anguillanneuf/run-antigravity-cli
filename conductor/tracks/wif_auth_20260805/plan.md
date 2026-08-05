@@ -1,7 +1,7 @@
 # Implementation Plan: Workload Identity Federation Authentication for PR Review Engine
 
 ## Phase 1: Action Configuration & Schema Update
-- [ ] Task: Update `action.yml` to add inputs for `workload-identity-provider` and `service-account` and pass env vars.
+- [x] Task: Update `action.yml` to add inputs for `workload-identity-provider` and `service-account` and pass env vars. (5dcfa56)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Review Engine Authentication & Settings (TDD)

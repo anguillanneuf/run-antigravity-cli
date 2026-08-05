@@ -91,9 +91,39 @@ class AntigravityReviewEngine:
         if self.custom_prompt:
             instructions += f"\n\nCustom Guidelines:\n{self.custom_prompt}"
 
-        config = LocalAgentConfig(
-            system_instructions=instructions, capabilities=CapabilitiesConfig()
-        )
+        config_kwargs = {
+            "system_instructions": instructions,
+            "capabilities": CapabilitiesConfig(),
+        }
+
+        if self.api_key:
+            config_kwargs["api_key"] = self.api_key
+
+        if (
+            not self.api_key
+            or self.workload_identity_provider
+            or self.service_account
+            or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        ):
+            config_kwargs["vertex"] = True
+            project = (
+                self.gcp_project_id
+                or os.environ.get("GCP_PROJECT_ID")
+                or os.environ.get("GOOGLE_CLOUD_PROJECT")
+                or os.environ.get("GCLOUD_PROJECT")
+            )
+            if project:
+                config_kwargs["project"] = project
+            location = (
+                self.gcp_location
+                or os.environ.get("GCP_LOCATION")
+                or os.environ.get("GOOGLE_CLOUD_REGION")
+                or "global"
+            )
+            if location:
+                config_kwargs["location"] = location
+
+        config = LocalAgentConfig(**config_kwargs)
 
         async with Agent(config) as agent:
             yield agent

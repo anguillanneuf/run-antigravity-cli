@@ -265,3 +265,39 @@ def test_wif_settings_generation_with_api_key_fallback(mock_file, mock_makedirs,
     assert parsed_written["gemini_api_key"] == "fallback-gemini-key"
     assert parsed_written["workload_identity_provider"] == "projects/123/locations/global/workloadIdentityPools/pool/providers/provider"
 
+
+@patch("src.review_engine.LocalAgentConfig")
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_lease_agent_config_auth_modes(mock_agent_cls, mock_local_config_cls):
+    """Verify that _lease_agent passes api_key or vertex/project/location parameters to LocalAgentConfig based on auth mode."""
+    # 1. API Key mode
+    engine_key = AntigravityReviewEngine(api_key="my-api-key")
+    async with engine_key._lease_agent():
+        pass
+    
+    mock_local_config_cls.assert_called_with(
+        system_instructions=pytest.any_int if False else mock_local_config_cls.call_args.kwargs["system_instructions"],
+        capabilities=mock_local_config_cls.call_args.kwargs["capabilities"],
+        api_key="my-api-key"
+    )
+
+    # 2. WIF / Vertex AI mode (no API key)
+    engine_wif = AntigravityReviewEngine(
+        workload_identity_provider="projects/123/locations/global/workloadIdentityPools/pool/providers/provider",
+        service_account="sa@project.iam.gserviceaccount.com",
+        gcp_project_id="my-gcp-project",
+        gcp_location="us-central1"
+    )
+    async with engine_wif._lease_agent():
+        pass
+
+    mock_local_config_cls.assert_called_with(
+        system_instructions=mock_local_config_cls.call_args.kwargs["system_instructions"],
+        capabilities=mock_local_config_cls.call_args.kwargs["capabilities"],
+        vertex=True,
+        project="my-gcp-project",
+        location="us-central1"
+    )
+
+

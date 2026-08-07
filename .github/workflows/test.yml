@@ -32,14 +32,14 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT || vars.SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
 
       - name: Run Antigravity Review Agent
         uses: ./
         with:
           gcp-project-id: ${{ vars.GCP_PROJECT_ID }}
-          gcp-location: ${{ vars.GCP_LOCATION || 'global' }}
+          gcp-location: ${{ vars.GCP_LOCATION }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           fail-on-error: true
           custom-prompt: |

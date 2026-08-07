@@ -8,6 +8,7 @@ The **Antigravity CLI GitHub Action** (`run-antigravity-cli`) is a custom GitHub
 2. **Security & Vulnerability Pre-screening**: Automatically screens incoming pull request diffs for exposed credentials (API keys, secrets) or high-severity security anti-patterns, notifying developers immediately.
 3. **Flexible Authentication Options**: Supports standard GitHub secrets/API key integrations as well as Google Cloud Application Default Credentials (ADC) via service accounts for enterprise-grade authentication.
 4. **Customizable Review Prompts**: Allows repository maintainers to pass custom instructions or system prompts to guide the AI, enabling tailored review behaviors based on project-specific rules.
+5. **DDoS & Resource Exhaustion Guardrails**: Built-in workflow gating (author association checks, `safe-to-test` label requirement for external PRs, draft skipping), concurrency controls, and diff line/file size caps to protect maintainers against spam PRs and API quota depletion.
 
 ## Target Scenarios
 - **PR Gating and Acceleration**: Providing immediate feedback to contributors upon opening a Pull Request, allowing them to fix obvious issues before a human reviewer looks at the code.

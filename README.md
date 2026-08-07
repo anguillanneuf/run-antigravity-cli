@@ -132,6 +132,13 @@ For enterprise security compliance, we highly recommend using **Google Cloud Wor
    ```
 
 4. Grant necessary IAM roles (e.g., Gemini/Vertex AI Developer roles) to the Service Account.
+   - AI Platform Editor
+   - Cloud Trace Agent
+   - Gemini for Google Cloud User
+   - Logs Writer
+   - Monitoring Editor
+   - Service Account Token Creator
+   - Workload Identity User
 
 ### Step 2: Configure your GitHub Actions Workflow
 Ensure your workflow specifies `permissions: id-token: write` and configures the GCP auth step:

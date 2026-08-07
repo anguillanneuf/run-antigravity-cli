@@ -19,7 +19,8 @@ DEFAULT_SYSTEM_INSTRUCTIONS = (
     "   - 'line': (integer) the exact line number in the target/new file "
     "where the suggestion is.\n"
     "   - 'body': (string) the markdown suggestions. Include suggestion blocks if useful.\n"
-    "4. Do NOT output any conversational text. Return ONLY the raw JSON array."
+    "4. Do NOT output any conversational text. Return ONLY the raw JSON array.\n"
+    "5. Do NOT suggest downgrading library or GitHub Action versions unless a verified critical bug exists in that specific version."
 )
 
 

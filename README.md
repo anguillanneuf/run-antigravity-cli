@@ -131,7 +131,14 @@ For enterprise security compliance, we highly recommend using **Google Cloud Wor
      --member="principalSet://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/YOUR_ORGANIZATION/YOUR_REPO"
    ```
 
-4. Grant necessary IAM roles (e.g., Gemini/Vertex AI Developer roles) to the Service Account.
+4. Grant necessary IAM roles to the Service Account.
+   - Agent Platform User
+   - Workload Identity User
+   - Service Account Token Creator
+   - Gemini for Google Cloud User
+   - Cloud Trace Agent
+   - Logs Writer
+   - Monitoring Viewer
 
 ### Step 2: Configure your GitHub Actions Workflow
 Ensure your workflow specifies `permissions: id-token: write` and configures the GCP auth step:

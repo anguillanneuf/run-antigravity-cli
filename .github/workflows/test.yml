@@ -23,23 +23,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # -------------------------------------------------------------------------
-      # RECOMMENDED: Authenticate to Google Cloud via Workload Identity Federation
-      # This provides keyless, secure authentication to Gemini APIs without secrets.
+      # Authenticate to Google Cloud via Workload Identity Federation (OIDC)
       # -------------------------------------------------------------------------
-      # - name: Authenticate to Google Cloud (OIDC)
-      #   uses: google-github-actions/auth@v2
-      #   with:
-      #     workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/YOUR_POOL/providers/YOUR_PROVIDER'
-      #     service_account: 'your-antigravity-sa@your-project.iam.gserviceaccount.com'
+      - name: Authenticate to Google Cloud (OIDC)
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
 
       - name: Run Antigravity Review Agent
         uses: ./
         with:
-          # Optional: Use API key if not using Workload Identity Federation
-          api-key: ${{ secrets.GEMINI_API_KEY }}
+          gcp-project-id: ${{ vars.GCP_PROJECT_ID }}
+          gcp-location: ${{ vars.GCP_LOCATION }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           fail-on-error: true
           custom-prompt: |

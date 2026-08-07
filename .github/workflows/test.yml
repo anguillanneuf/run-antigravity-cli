@@ -37,8 +37,8 @@ jobs:
       - name: Run Antigravity Review Agent
         uses: ./
         with:
-          workload-identity-provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
-          service-account: ${{ vars.SERVICE_ACCOUNT }}
+          workload-identity-provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
           gcp-project-id: ${{ vars.GCP_PROJECT_ID }}
           gcp-location: ${{ vars.GCP_LOCATION || 'global' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

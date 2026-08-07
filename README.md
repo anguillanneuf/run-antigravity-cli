@@ -20,7 +20,9 @@ An enterprise-grade, TDD-designed custom GitHub Action that leverages the **Goog
 | Input Parameter | Description | Required | Default |
 | :--- | :--- | :--- | :--- |
 | `github-token` | The GitHub Token used to fetch unified diffs and post review comments back to the PR. | **Yes** | `${{ github.token }}` |
-| `api-key` | Google Cloud / Gemini API key. *(Optional if using Workload Identity OIDC).* | No | `""` |
+| `api-key` | Google Cloud / Gemini API key. *(Optional if using Workload Identity Federation)*. | No | `""` |
+| `workload-identity-provider` | Full GCP Workload Identity Provider resource name for keyless authentication. | No | `""` |
+| `service-account` | GCP Service Account email to impersonate when using Workload Identity Federation. | No | `""` |
 | `custom-prompt` | Additional developer guidelines or review prompts to direct the review agent. | No | `""` |
 | `fail-on-error` | Whether to fail the workflow run if the orchestration engine throws an error. | No | `false` |
 

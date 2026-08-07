@@ -26,8 +26,20 @@ DEFAULT_SYSTEM_INSTRUCTIONS = (
 class AntigravityReviewEngine:
     """Interfaces with the Google Antigravity SDK to execute automated code reviews."""
 
-    def __init__(self, api_key=None, custom_prompt=None):
+    def __init__(
+        self,
+        api_key=None,
+        workload_identity_provider=None,
+        service_account=None,
+        gcp_project_id=None,
+        gcp_location=None,
+        custom_prompt=None,
+    ):
         self.api_key = api_key
+        self.workload_identity_provider = workload_identity_provider
+        self.service_account = service_account
+        self.gcp_project_id = gcp_project_id
+        self.gcp_location = gcp_location
         self.custom_prompt = custom_prompt
 
     def ensure_settings_configured(self):
@@ -40,15 +52,35 @@ class AntigravityReviewEngine:
         os.makedirs(settings_dir, exist_ok=True)
         settings_path = os.path.join(settings_dir, "settings.json")
 
+        config_payload = {}
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    config_payload = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                pass
+
         if self.api_key:
-            config_payload = {}
-            if os.path.exists(settings_path):
-                try:
-                    with open(settings_path, "r", encoding="utf-8") as f:
-                        config_payload = json.load(f)
-                except (json.JSONDecodeError, IOError):
-                    pass
             config_payload["gemini_api_key"] = self.api_key
+
+        if (
+            self.workload_identity_provider
+            or self.service_account
+            or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        ):
+            config_payload["auth_mode"] = "workload_identity"
+            if self.workload_identity_provider:
+                config_payload["workload_identity_provider"] = (
+                    self.workload_identity_provider
+                )
+            if self.service_account:
+                config_payload["service_account"] = self.service_account
+            if self.gcp_project_id:
+                config_payload["gcp_project_id"] = self.gcp_project_id
+            if self.gcp_location:
+                config_payload["gcp_location"] = self.gcp_location
+
+        if config_payload:
             with open(settings_path, "w", encoding="utf-8") as f:
                 json.dump(config_payload, f, indent=2)
 
@@ -59,9 +91,39 @@ class AntigravityReviewEngine:
         if self.custom_prompt:
             instructions += f"\n\nCustom Guidelines:\n{self.custom_prompt}"
 
-        config = LocalAgentConfig(
-            system_instructions=instructions, capabilities=CapabilitiesConfig()
-        )
+        config_kwargs = {
+            "system_instructions": instructions,
+            "capabilities": CapabilitiesConfig(),
+        }
+
+        if self.api_key:
+            config_kwargs["api_key"] = self.api_key
+
+        if (
+            not self.api_key
+            or self.workload_identity_provider
+            or self.service_account
+            or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        ):
+            config_kwargs["vertex"] = True
+            project = (
+                self.gcp_project_id
+                or os.environ.get("GCP_PROJECT_ID")
+                or os.environ.get("GOOGLE_CLOUD_PROJECT")
+                or os.environ.get("GCLOUD_PROJECT")
+            )
+            if project:
+                config_kwargs["project"] = project
+            location = (
+                self.gcp_location
+                or os.environ.get("GCP_LOCATION")
+                or os.environ.get("GOOGLE_CLOUD_REGION")
+                or "global"
+            )
+            if location:
+                config_kwargs["location"] = location
+
+        config = LocalAgentConfig(**config_kwargs)
 
         async with Agent(config) as agent:
             yield agent

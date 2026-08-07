@@ -212,3 +212,92 @@ def test_validate_markdown_suggestions():
     validated_no_trigger = engine._validate_markdown_suggestions(body_no_trigger)
     assert "```python" in validated_no_trigger
     assert "```suggestion" not in validated_no_trigger
+
+
+@patch("os.path.exists")
+@patch("os.makedirs")
+@patch("builtins.open", new_callable=mock_open)
+def test_wif_settings_generation(mock_file, mock_makedirs, mock_exists):
+    """Verify that settings.json correctly configures Workload Identity Federation when WIF parameters are supplied."""
+    mock_exists.return_value = False
+    engine = AntigravityReviewEngine(
+        workload_identity_provider="projects/123/locations/global/workloadIdentityPools/pool/providers/provider",
+        service_account="sa@project.iam.gserviceaccount.com",
+        gcp_project_id="my-gcp-project",
+        gcp_location="us-central1",
+    )
+
+    engine.ensure_settings_configured()
+
+    mock_makedirs.assert_called_once()
+    mock_file.assert_called_once()
+
+    handle = mock_file()
+    written_data = "".join(call.args[0] for call in handle.write.call_args_list)
+    parsed_written = json.loads(written_data)
+
+    assert parsed_written["auth_mode"] == "workload_identity"
+    assert parsed_written["workload_identity_provider"] == "projects/123/locations/global/workloadIdentityPools/pool/providers/provider"
+    assert parsed_written["service_account"] == "sa@project.iam.gserviceaccount.com"
+    assert parsed_written["gcp_project_id"] == "my-gcp-project"
+    assert parsed_written["gcp_location"] == "us-central1"
+
+
+@patch("os.path.exists")
+@patch("os.makedirs")
+@patch("builtins.open", new_callable=mock_open)
+def test_wif_settings_generation_with_api_key_fallback(mock_file, mock_makedirs, mock_exists):
+    """Verify settings.json includes both WIF settings and gemini_api_key for fallback support."""
+    mock_exists.return_value = False
+    engine = AntigravityReviewEngine(
+        api_key="fallback-gemini-key",
+        workload_identity_provider="projects/123/locations/global/workloadIdentityPools/pool/providers/provider",
+        service_account="sa@project.iam.gserviceaccount.com",
+    )
+
+    engine.ensure_settings_configured()
+
+    handle = mock_file()
+    written_data = "".join(call.args[0] for call in handle.write.call_args_list)
+    parsed_written = json.loads(written_data)
+
+    assert parsed_written["auth_mode"] == "workload_identity"
+    assert parsed_written["gemini_api_key"] == "fallback-gemini-key"
+    assert parsed_written["workload_identity_provider"] == "projects/123/locations/global/workloadIdentityPools/pool/providers/provider"
+
+
+@patch("src.review_engine.LocalAgentConfig")
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_lease_agent_config_auth_modes(mock_agent_cls, mock_local_config_cls):
+    """Verify that _lease_agent passes api_key or vertex/project/location parameters to LocalAgentConfig based on auth mode."""
+    # 1. API Key mode
+    engine_key = AntigravityReviewEngine(api_key="my-api-key")
+    async with engine_key._lease_agent():
+        pass
+    
+    mock_local_config_cls.assert_called_with(
+        system_instructions=pytest.any_int if False else mock_local_config_cls.call_args.kwargs["system_instructions"],
+        capabilities=mock_local_config_cls.call_args.kwargs["capabilities"],
+        api_key="my-api-key"
+    )
+
+    # 2. WIF / Vertex AI mode (no API key)
+    engine_wif = AntigravityReviewEngine(
+        workload_identity_provider="projects/123/locations/global/workloadIdentityPools/pool/providers/provider",
+        service_account="sa@project.iam.gserviceaccount.com",
+        gcp_project_id="my-gcp-project",
+        gcp_location="us-central1"
+    )
+    async with engine_wif._lease_agent():
+        pass
+
+    mock_local_config_cls.assert_called_with(
+        system_instructions=mock_local_config_cls.call_args.kwargs["system_instructions"],
+        capabilities=mock_local_config_cls.call_args.kwargs["capabilities"],
+        vertex=True,
+        project="my-gcp-project",
+        location="us-central1"
+    )
+
+

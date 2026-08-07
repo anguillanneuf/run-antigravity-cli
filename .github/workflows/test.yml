@@ -2,7 +2,7 @@ name: 'Antigravity Self-Testing Workflow'
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+types: [opened, synchronize, reopened, labeled, ready_for_review]
   issue_comment:
     types: [created]
 

@@ -1,13 +1,13 @@
 # Implementation Plan: DDoS Protection & Resource Exhaustion Guards
 
 ## Phase 1: Workflow Gating & Concurrency Controls (`test.yml`)
-- [ ] Task: Configure concurrency grouping and timeouts in workflow files
-  - [ ] Add `concurrency` group with `cancel-in-progress: true` to `.github/workflows/test.yml`
-  - [ ] Add explicit `timeout-minutes` to workflow jobs
-- [ ] Task: Add author association, draft PR, and label gating in `.github/workflows/test.yml`
-  - [ ] Add `if` condition to skip draft pull requests
-  - [ ] Add `if` condition checking `github.event.pull_request.author_association` (`OWNER`, `MEMBER`, `COLLABORATOR`) OR presence of `safe-to-test` label for external fork PRs
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Configure concurrency grouping and timeouts in workflow files
+  - [x] Add `concurrency` group with `cancel-in-progress: true` to `.github/workflows/test.yml`
+  - [x] Add explicit `timeout-minutes` to workflow jobs
+- [x] Task: Add author association, draft PR, and label gating in `.github/workflows/test.yml`
+  - [x] Add `if` condition to skip draft pull requests
+  - [x] Add `if` condition checking `github.event.pull_request.author_association` (`OWNER`, `MEMBER`, `COLLABORATOR`) OR presence of `safe-to-test` label for external fork PRs
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Runtime Guards in Python Codebase & Action Interface
 - [ ] Task: Write failing unit tests for diff size caps and guard parameters (Red Phase)

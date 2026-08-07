@@ -2,9 +2,13 @@ name: 'Antigravity Self-Testing Workflow'
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
   issue_comment:
     types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -14,12 +18,23 @@ permissions:
 jobs:
   code-review:
     name: 'Google Antigravity Code Review'
-    # Run review only for PR events or when /review is requested on PR comments
+    timeout-minutes: 15
+    # Run review for PRs from trusted authors or labeled safe-to-test, or via /review comment by trusted authors
     if: |
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request &&
-       contains(github.event.comment.body, '/review'))
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.draft == false &&
+        (
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) ||
+          contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+        )
+      ) ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/review') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

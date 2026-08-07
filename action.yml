@@ -31,6 +31,14 @@ inputs:
     description: 'Whether to fail the workflow run if the review agent encounters an error'
     required: false
     default: 'false'
+  max-diff-lines:
+    description: 'Maximum number of modified lines allowed in PR diff before skipping review to avoid resource exhaustion'
+    required: false
+    default: '2000'
+  max-diff-files:
+    description: 'Maximum number of modified files allowed in PR diff before skipping review to avoid resource exhaustion'
+    required: false
+    default: '50'
 runs:
   using: 'composite'
   steps:
@@ -64,6 +72,8 @@ runs:
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_CUSTOM_PROMPT: ${{ inputs.custom-prompt }}
         INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+        INPUT_MAX_DIFF_LINES: ${{ inputs.max-diff-lines }}
+        INPUT_MAX_DIFF_FILES: ${{ inputs.max-diff-files }}
         PYTHONPATH: ${{ github.action_path }}
         GEMINI_API_KEY: ${{ inputs.api-key }}
         GITHUB_TOKEN: ${{ inputs.github-token }}

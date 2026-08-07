@@ -317,3 +317,73 @@ async def test_entrypoint_wif_auth_inputs(
                 custom_prompt=None,
             )
 
+
+@pytest.mark.asyncio
+@patch("src.entrypoint.GitHubEventContext.from_env")
+@patch("src.entrypoint.GitHubClient")
+@patch("src.entrypoint.AntigravityReviewEngine")
+async def test_entrypoint_exceeds_max_diff_lines(
+    mock_engine_cls, mock_client_cls, mock_context_from_env, mock_env
+):
+    """Verify skipping review when total changed lines in diff exceeds MAX_DIFF_LINES limit."""
+    from src.entrypoint import main_async
+
+    with patch.dict(os.environ, {"INPUT_MAX_DIFF_LINES": "10"}):
+        mock_context = MagicMock(spec=GitHubEventContext)
+        mock_context.event_name = "pull_request"
+        mock_context.pr_number = 42
+        mock_context.repo_owner = "google"
+        mock_context.repo_name = "run-antigravity-cli"
+        mock_context.token = "mock-github-token-456"
+        mock_context_from_env.return_value = mock_context
+
+        mock_client = MagicMock(spec=GitHubClient)
+        mock_client.fetch_pr_diff.return_value = "mock-large-diff"
+        mock_client_cls.return_value = mock_client
+
+        with patch("src.entrypoint.parse_diff_to_changed_lines") as mock_parse_diff:
+            # 15 lines total modified > limit of 10
+            mock_parse_diff.return_value = {"file1.py": list(range(1, 16))}
+            exit_code = await main_async()
+
+            assert exit_code == 0
+            # Review engine should NOT have been called due to size guard
+            mock_engine_cls.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("src.entrypoint.GitHubEventContext.from_env")
+@patch("src.entrypoint.GitHubClient")
+@patch("src.entrypoint.AntigravityReviewEngine")
+async def test_entrypoint_exceeds_max_diff_files(
+    mock_engine_cls, mock_client_cls, mock_context_from_env, mock_env
+):
+    """Verify skipping review when total changed files in diff exceeds MAX_DIFF_FILES limit."""
+    from src.entrypoint import main_async
+
+    with patch.dict(os.environ, {"INPUT_MAX_DIFF_FILES": "2"}):
+        mock_context = MagicMock(spec=GitHubEventContext)
+        mock_context.event_name = "pull_request"
+        mock_context.pr_number = 42
+        mock_context.repo_owner = "google"
+        mock_context.repo_name = "run-antigravity-cli"
+        mock_context.token = "mock-github-token-456"
+        mock_context_from_env.return_value = mock_context
+
+        mock_client = MagicMock(spec=GitHubClient)
+        mock_client.fetch_pr_diff.return_value = "mock-large-diff"
+        mock_client_cls.return_value = mock_client
+
+        with patch("src.entrypoint.parse_diff_to_changed_lines") as mock_parse_diff:
+            # 3 files > limit of 2
+            mock_parse_diff.return_value = {
+                "file1.py": [1],
+                "file2.py": [1],
+                "file3.py": [1],
+            }
+            exit_code = await main_async()
+
+            assert exit_code == 0
+            # Review engine should NOT have been called due to file count guard
+            mock_engine_cls.assert_not_called()
+

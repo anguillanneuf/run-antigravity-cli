@@ -25,6 +25,20 @@ An enterprise-grade, TDD-designed custom GitHub Action that leverages the **Goog
 | `service-account` | GCP Service Account email to impersonate when using Workload Identity Federation. | No | `""` |
 | `custom-prompt` | Additional developer guidelines or review prompts to direct the review agent. | No | `""` |
 | `fail-on-error` | Whether to fail the workflow run if the orchestration engine throws an error. | No | `false` |
+| `max-diff-lines` | Maximum modified lines allowed in a PR diff before skipping review to avoid resource exhaustion. | No | `'2000'` |
+| `max-diff-files` | Maximum modified files allowed in a PR diff before skipping review to avoid resource exhaustion. | No | `'50'` |
+
+---
+
+## 🛡️ Resource Exhaustion & DDoS Protection
+
+To protect public repositories from spam PRs, API quota depletion, and runner exhaustion:
+
+1. **Author Association Gating**: Workflows automatically run AI reviews for trusted authors (`OWNER`, `MEMBER`, `COLLABORATOR`).
+2. **`safe-to-test` Label for External Contributors**: For external fork PRs, reviews are held until a maintainer applies the `safe-to-test` label to the PR or issues a `/review` comment.
+3. **Draft PR Skipping**: Draft pull requests are automatically skipped.
+4. **Concurrency Controls**: Subsequent commits on the same PR immediately terminate outdated, in-flight review runs (`cancel-in-progress: true`).
+5. **Diff & File Caps**: Use `max-diff-lines` (default 2000) and `max-diff-files` (default 50) to prevent gigantic generated PRs from draining LLM tokens.
 
 ---
 

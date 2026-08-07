@@ -10,17 +10,17 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Runtime Guards in Python Codebase & Action Interface
-- [ ] Task: Write failing unit tests for diff size caps and guard parameters (Red Phase)
-  - [ ] Create unit tests in `tests/` for diff line cap detection and skip handling
-  - [ ] Run tests and verify they fail as expected
-- [ ] Task: Implement diff size capping and runtime guards in Python wrapper (Green Phase)
-  - [ ] Implement diff line counting and threshold checks in `src/`
-  - [ ] Add structured logging when AGY execution is safely skipped
-  - [ ] Run tests and verify they pass
-- [ ] Task: Refactor and verify test coverage >80%
-  - [ ] Refactor guard logic for maintainability
-  - [ ] Run `pytest --cov=src --cov-report=term-missing` and confirm >80% coverage
-- [ ] Task: Expose configurable inputs in `action.yml` and update documentation
-  - [ ] Add `max_diff_lines` input parameter to `action.yml` with sensible default
-  - [ ] Update `README.md` with security best practices and the `safe-to-test` label guide
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Write failing unit tests for diff size caps and guard parameters (Red Phase)
+  - [x] Create unit tests in `tests/` for diff line cap detection and skip handling
+  - [x] Run tests and verify they fail as expected
+- [x] Task: Implement diff size capping and runtime guards in Python wrapper (Green Phase)
+  - [x] Implement diff line counting and threshold checks in `src/`
+  - [x] Add structured logging when AGY execution is safely skipped
+  - [x] Run tests and verify they pass
+- [x] Task: Refactor and verify test coverage >80%
+  - [x] Refactor guard logic for maintainability
+  - [x] Run `pytest --cov=src --cov-report=term-missing` and confirm >80% coverage
+- [x] Task: Expose configurable inputs in `action.yml` and update documentation
+  - [x] Add `max_diff_lines` input parameter to `action.yml` with sensible default
+  - [x] Update `README.md` with security best practices and the `safe-to-test` label guide
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)

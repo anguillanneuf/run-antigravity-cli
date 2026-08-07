@@ -2,22 +2,25 @@
 
 import asyncio
 import os
+from pathlib import Path
 import sys
-from src.github_client import (
+
+# Add the repository root to sys.path so 'from src....' imports work
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.github_client import (  # pylint: disable=wrong-import-position
     GitHubEventContext,
     GitHubClient,
     parse_diff_to_changed_lines,
 )
-
-from pathlib import Path                                                                  
-                                                                                              
-# Add the repository root to sys.path so 'from src....' imports work                      
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  
-
-from src.review_engine import AntigravityReviewEngine
+from src.review_engine import (  # pylint: disable=wrong-import-position
+    AntigravityReviewEngine,
+)
 
 
-async def main_async() -> int:  # pylint: disable=too-many-locals,too-many-return-statements
+async def main_async() -> (
+    int
+):  # pylint: disable=too-many-locals,too-many-return-statements,too-many-statements
     """Performs the async core execution of the review action.
 
     Returns:
@@ -49,6 +52,22 @@ async def main_async() -> int:  # pylint: disable=too-many-locals,too-many-retur
     custom_prompt = os.environ.get("INPUT_CUSTOM-PROMPT") or os.environ.get(
         "INPUT_CUSTOM_PROMPT"
     )
+
+    max_diff_lines_raw = os.environ.get("INPUT_MAX-DIFF-LINES") or os.environ.get(
+        "INPUT_MAX_DIFF_LINES"
+    ) or "2000"
+    try:
+        max_diff_lines = int(max_diff_lines_raw.strip())
+    except ValueError:
+        max_diff_lines = 2000
+
+    max_diff_files_raw = os.environ.get("INPUT_MAX-DIFF-FILES") or os.environ.get(
+        "INPUT_MAX_DIFF_FILES"
+    ) or "50"
+    try:
+        max_diff_files = int(max_diff_files_raw.strip())
+    except ValueError:
+        max_diff_files = 50
 
     print("🤖 Google Antigravity Code Review Action starting...")
 
@@ -95,8 +114,26 @@ async def main_async() -> int:  # pylint: disable=too-many-locals,too-many-retur
             print("No added or modified lines found in this diff. Skipping review.")
             return 0
 
+        changed_files_count = len(changed_lines)
+        total_changed_lines = sum(len(lines) for lines in changed_lines.values())
+
+        if 0 < max_diff_files < changed_files_count:
+            print(
+                f"⚠️ Diff modifies {changed_files_count} files, exceeding max limit "
+                f"({max_diff_files} files). Skipping AI review to prevent resource exhaustion."
+            )
+            return 0
+
+        if 0 < max_diff_lines < total_changed_lines:
+            print(
+                f"⚠️ Diff contains {total_changed_lines} modified lines, exceeding max limit "
+                f"({max_diff_lines} lines). Skipping AI review to prevent resource exhaustion."
+            )
+            return 0
+
         print(
-            f"Found modifications in {len(changed_lines)} files. Running review engine..."
+            f"Found modifications in {changed_files_count} files ({total_changed_lines} lines). "
+            "Running review engine..."
         )
 
         # 5. Execute Antigravity Review Engine

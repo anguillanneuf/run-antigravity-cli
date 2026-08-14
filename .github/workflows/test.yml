@@ -1,7 +1,7 @@
 name: 'Antigravity Self-Testing Workflow'
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, labeled, ready_for_review]
   issue_comment:
     types: [created]
@@ -22,7 +22,7 @@ jobs:
     # Run review for PRs from trusted authors or labeled safe-to-test, or via /review comment by trusted authors
     if: |
       (
-        github.event_name == 'pull_request' &&
+        github.event_name == 'pull_request_target' &&
         github.event.pull_request.draft == false &&
         (
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) ||
@@ -39,6 +39,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       # -------------------------------------------------------------------------
       # Authenticate to Google Cloud via Workload Identity Federation (OIDC)

@@ -9,7 +9,7 @@ on:
     types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -21,10 +21,14 @@ jobs:
   code-review:
     name: 'Google Antigravity Code Review'
     timeout-minutes: 15
-    # Run review for PRs from trusted authors or labeled safe-to-test, or via /review comment by trusted authors
+    # Run review for PRs from trusted authors or labeled safe-to-test, or via /review comment by trusted authors.
+    # Internal PRs run via pull_request, while fork PRs run via pull_request_target.
     if: |
       (
-        (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') &&
+        (
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+          (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
+        ) &&
         github.event.pull_request.draft == false &&
         (
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) ||

@@ -9,22 +9,26 @@ on:
     types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: read       # Required for checking out code
   pull-requests: write # Required for posting inline review comments
-  id-token: write      # Required for Google Cloud OIDC Workload Identity Federation
+  id-token: write      # Required for requesting JWT OICD token from Google Cloud OIDC Workload Identity Federation
 
 jobs:
   code-review:
     name: 'Google Antigravity Code Review'
     timeout-minutes: 15
-    # Run review for PRs from trusted authors or labeled safe-to-test, or via /review comment by trusted authors
+    # Run review for PRs from trusted authors or labeled safe-to-test, or via /review comment by trusted authors.
+    # Internal PRs run via pull_request, while fork PRs run via pull_request_target.
     if: |
       (
-        (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') &&
+        (
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+          (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
+        ) &&
         github.event.pull_request.draft == false &&
         (
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) ||
@@ -43,6 +47,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          allow-unsafe-pr-checkout: true
 
       # -------------------------------------------------------------------------
       # Authenticate to Google Cloud via Workload Identity Federation (OIDC)

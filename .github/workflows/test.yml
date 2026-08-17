@@ -13,9 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: read       # Required for checking out code
   pull-requests: write # Required for posting inline review comments
-  id-token: write      # Required for Google Cloud OIDC Workload Identity Federation
+  id-token: write      # Required for requesting JWT OICD token from Google Cloud OIDC Workload Identity Federation
 
 jobs:
   code-review:

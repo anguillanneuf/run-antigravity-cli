@@ -17,3 +17,6 @@ htmlcov/
 .vscode/
 *.swp
 *.swo
+
+# Antigravity workspace configs
+.agents/

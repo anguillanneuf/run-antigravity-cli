@@ -21,9 +21,9 @@ This plan guides the creation of the `.github/workflows/test-cm.yml` workflow an
     - [x] Add CodeMender CLI download, caching via `actions/cache`, and binary setup at `/usr/local/bin/cm`.
     - [x] Add workspace initialization (`cm init`) and `cm find` execution step with diff/full mode switching and dry-run handling.
     - [x] Add step to format findings into `$GITHUB_STEP_SUMMARY` and post a GitHub PR comment on pull request events.
-- [ ] Task: Workflow syntax validation and simulation tests
-    - [ ] Write validation test to check YAML syntax and action structure against GitHub Actions schema.
-    - [ ] Execute automated tests and ensure zero errors.
+- [x] Task: Workflow syntax validation and simulation tests [3b79ac1]
+    - [x] Write validation test to check YAML syntax and action structure against GitHub Actions schema.
+    - [x] Execute automated tests and ensure zero errors.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Documentation & Verification Guide

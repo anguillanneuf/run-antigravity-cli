@@ -28,6 +28,6 @@ This plan guides the creation of the `.github/workflows/test-cm.yml` workflow an
 
 ## Phase 3: Documentation & Verification Guide
 
-- [ ] Task: Document CodeMender workflow setup and WIF configuration
-    - [ ] Update `README.md` with instructions on required GCP IAM roles (`roles/aiplatform.user`), GitHub repository variables (`GCP_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT_EMAIL`), and manual verification steps.
+- [x] Task: Document CodeMender workflow setup and WIF configuration [71c2146]
+    - [x] Update `README.md` with instructions on required GCP IAM roles (`roles/aiplatform.user`), GitHub repository variables (`GCP_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT_EMAIL`), and manual verification steps.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)

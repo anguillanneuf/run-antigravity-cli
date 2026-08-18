@@ -185,6 +185,36 @@ jobs:
 
 ---
 
+## 🛡️ CodeMender CLI Security Scan Workflow (`test-cm.yml`)
+
+This repository also includes automated cybersecurity vulnerability scanning powered by the **Google CodeMender CLI (`cm`)** in `.github/workflows/test-cm.yml`.
+
+### How It Works
+1. **Keyless Authentication**: Uses Google Cloud Workload Identity Federation (WIF) to exchange GitHub Actions OIDC tokens for Google Cloud credentials.
+2. **Autonomous Tool Setup & Caching**: Downloads and caches the CodeMender Linux CLI binary directly from Google Artifact Registry.
+3. **Headless CI Configuration**: Automatically generates non-interactive `.codemender/config.yaml` with safety confirmations bypassed for CI runners.
+4. **Target File Resolution**: Dynamically calculates modified files from the Pull Request diff and filters for supported programming language extensions.
+5. **Vulnerability Discovery**: Executes `cm find` on the changed files (or full workspace).
+6. **Actionable Reporting**: Publishes structured findings to `$GITHUB_STEP_SUMMARY` and posts/updates an interactive PR comment.
+
+### GCP IAM Permissions & Repository Variables
+Grant the Workload Identity Federation Service Account the following IAM role:
+* **Vertex AI User**: `roles/aiplatform.user`
+
+Configure the following GitHub repository variables in **Settings > Secrets and variables > Actions > Variables**:
+* `GCP_PROJECT_ID`: Your Google Cloud Project ID.
+* `GCP_WORKLOAD_IDENTITY_PROVIDER`: Full resource path of the Workload Identity Provider.
+* `GCP_SERVICE_ACCOUNT_EMAIL`: Email of the impersonated Service Account.
+
+### Manual Triggering (`workflow_dispatch`)
+You can trigger a scan manually with custom inputs from GitHub Actions:
+* `scan_mode`: `diff` (only modified files in PR/branch) or `full` (full workspace scan).
+* `dry_run`: `true` (validates installation and auth without failing if GCP resources are initializing).
+* `model`: CodeMender model tier (defaults to `gemini-3.5-flash`).
+
+
+---
+
 ## 💻 Local Simulation and Testing
 
 Developers can test and dry-run the entire review pipeline locally against any public or private pull request without committing to GitHub or triggering live builds.

@@ -7,7 +7,7 @@ import os
 import sys
 import urllib.request
 import urllib.error
-from typing import List, Optional
+from typing import Any, List, Optional
 
 COMMENT_IDENTIFIER = "<!-- codemender-scan-report -->"
 

@@ -163,15 +163,28 @@ def publish_scan_report(
         )
 
 
+def _parse_pr_number(val: Any) -> Optional[int]:
+    """Safely parse a PR number string or int, returning None for empty strings."""
+    if val is None:
+        return None
+    val_str = str(val).strip()
+    if not val_str:
+        return None
+    try:
+        return int(val_str)
+    except ValueError:
+        return None
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Publish CodeMender scan report.")
-    parser.add_argument("--output-file", default="", help="Path to raw scan output log file")
-    parser.add_argument("--exit-code", type=int, default=0, help="Exit code from cm find")
+    parser = argparse.ArgumentParser(description="Format and publish CodeMender scan results to GitHub Actions.")
+    parser.add_argument("--output-file", default=None, help="Path to CodeMender raw log output")
+    parser.add_argument("--exit-code", type=int, default=0, help="Exit code of CodeMender CLI process")
     parser.add_argument("--files", nargs="*", default=[], help="Scanned files list")
     parser.add_argument("--scan-mode", default="diff", choices=["diff", "full"], help="Scan mode")
     parser.add_argument("--dry-run", action="store_true", default=False, help="Dry run flag")
     parser.add_argument("--repo", default=os.getenv("GITHUB_REPOSITORY", ""), help="owner/repo")
-    parser.add_argument("--pr-number", type=int, default=None, help="PR issue number")
+    parser.add_argument("--pr-number", type=_parse_pr_number, default=None, help="PR issue number")
     parser.add_argument("--token", default=os.getenv("GITHUB_TOKEN", ""), help="GitHub Token")
 
     args = parser.parse_args()

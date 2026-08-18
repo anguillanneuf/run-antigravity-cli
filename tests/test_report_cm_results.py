@@ -9,8 +9,18 @@ from scripts.report_cm_results import (
     format_pr_comment,
     post_or_update_pr_comment,
     publish_scan_report,
+    _parse_pr_number,
     main,
 )
+
+
+def test_parse_pr_number():
+    assert _parse_pr_number("42") == 42
+    assert _parse_pr_number(42) == 42
+    assert _parse_pr_number("") is None
+    assert _parse_pr_number("   ") is None
+    assert _parse_pr_number(None) is None
+    assert _parse_pr_number("invalid") is None
 
 
 def test_format_step_summary_success_no_findings():
@@ -131,6 +141,7 @@ def test_main_cli(tmp_path, monkeypatch):
         "--exit-code", "0",
         "--files", "src/main.py",
         "--scan-mode", "diff",
+        "--pr-number", "",
     ])
     
     main()

@@ -4,10 +4,10 @@ This plan guides the creation of the `.github/workflows/test-cm.yml` workflow an
 
 ## Phase 1: CI Environment Scaffolding & Configuration Templates
 
-- [ ] Task: Create CodeMender CI configuration template and generator helper
-    - [ ] Define headless configuration template (`.codemender/config.yaml`) with `tools.confirm_commands: false`, `tools.confirm_writes: false`, `sandbox.enabled: false`, supported scan extensions, and `model: "gemini-3.5-flash"`.
-    - [ ] Create Python helper or script (`scripts/setup_cm_config.py` or inline action step) to initialize `.codemender/config.yaml` safely.
-    - [ ] Write unit tests to verify config generation and validity.
+- [x] Task: Create CodeMender CI configuration template and generator helper [2786df1]
+    - [x] Define headless configuration template (`.codemender/config.yaml`) with `tools.confirm_commands: false`, `tools.confirm_writes: false`, `sandbox.enabled: false`, supported scan extensions, and `model: "gemini-3.5-flash"`.
+    - [x] Create Python helper or script (`scripts/setup_cm_config.py` or inline action step) to initialize `.codemender/config.yaml` safely.
+    - [x] Write unit tests to verify config generation and validity.
 - [ ] Task: Create PR diff file extraction and extension filtering logic
     - [ ] Write script/helper (`scripts/resolve_pr_files.py`) to parse PR diff / git diff against base ref and filter supported extensions.
     - [ ] Write unit tests for diff resolution, extension filtering, and fallback when no matching files are changed.

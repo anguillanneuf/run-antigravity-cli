@@ -15,12 +15,12 @@ This plan guides the creation of the `.github/workflows/test-cm.yml` workflow an
 
 ## Phase 2: Workflow Definition (`.github/workflows/test-cm.yml`) & Reporting Integration
 
-- [ ] Task: Build complete GitHub Action workflow `.github/workflows/test-cm.yml`
-    - [ ] Configure triggers (`pull_request`, `pull_request_target`, `workflow_dispatch` with `scan_mode` and `dry_run` inputs) and author/label gating.
-    - [ ] Add Workload Identity Federation (WIF) authentication step using `google-github-actions/auth@v3`.
-    - [ ] Add CodeMender CLI download, caching via `actions/cache`, and binary setup at `/usr/local/bin/cm`.
-    - [ ] Add workspace initialization (`cm init`) and `cm find` execution step with diff/full mode switching and dry-run handling.
-    - [ ] Add step to format findings into `$GITHUB_STEP_SUMMARY` and post a GitHub PR comment on pull request events.
+- [x] Task: Build complete GitHub Action workflow `.github/workflows/test-cm.yml` [ecebb20]
+    - [x] Configure triggers (`pull_request`, `pull_request_target`, `workflow_dispatch` with `scan_mode` and `dry_run` inputs) and author/label gating.
+    - [x] Add Workload Identity Federation (WIF) authentication step using `google-github-actions/auth@v3`.
+    - [x] Add CodeMender CLI download, caching via `actions/cache`, and binary setup at `/usr/local/bin/cm`.
+    - [x] Add workspace initialization (`cm init`) and `cm find` execution step with diff/full mode switching and dry-run handling.
+    - [x] Add step to format findings into `$GITHUB_STEP_SUMMARY` and post a GitHub PR comment on pull request events.
 - [ ] Task: Workflow syntax validation and simulation tests
     - [ ] Write validation test to check YAML syntax and action structure against GitHub Actions schema.
     - [ ] Execute automated tests and ensure zero errors.

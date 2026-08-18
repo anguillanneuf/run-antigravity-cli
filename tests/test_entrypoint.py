@@ -88,6 +88,7 @@ async def test_entrypoint_pull_request_success(
             gcp_project_id=None,
             gcp_location=None,
             custom_prompt="Review carefully.",
+            model=None,
         )
         mock_engine.run_review.assert_called_once_with(
             "mock-diff-patch", {"src/main.py": [5]}
@@ -315,6 +316,7 @@ async def test_entrypoint_wif_auth_inputs(
                 gcp_project_id="my-gcp-project",
                 gcp_location="us-central1",
                 custom_prompt=None,
+                model=None,
             )
 
 

@@ -35,6 +35,7 @@ class AntigravityReviewEngine:
         gcp_project_id=None,
         gcp_location=None,
         custom_prompt=None,
+        model=None,
     ):
         self.api_key = api_key
         self.workload_identity_provider = workload_identity_provider
@@ -42,6 +43,7 @@ class AntigravityReviewEngine:
         self.gcp_project_id = gcp_project_id
         self.gcp_location = gcp_location
         self.custom_prompt = custom_prompt
+        self.model = model
 
     def ensure_settings_configured(self):
         """Generates or updates the local settings.json configuration file.
@@ -97,6 +99,13 @@ class AntigravityReviewEngine:
             "capabilities": CapabilitiesConfig(),
         }
 
+        if self.model:
+            config_kwargs["model"] = self.model
+        elif os.environ.get("INPUT_MODEL") or os.environ.get("GEMINI_MODEL"):
+            config_kwargs["model"] = (
+                os.environ.get("INPUT_MODEL") or os.environ.get("GEMINI_MODEL")
+            )
+
         if self.api_key:
             config_kwargs["api_key"] = self.api_key
 
@@ -123,6 +132,10 @@ class AntigravityReviewEngine:
             )
             if location:
                 config_kwargs["location"] = location
+
+            # For Vertex AI, ensure a standard GA model is set if not explicitly specified
+            if "model" not in config_kwargs or not config_kwargs["model"]:
+                config_kwargs["model"] = "gemini-2.5-flash"
 
         config = LocalAgentConfig(**config_kwargs)
 

@@ -27,6 +27,10 @@ inputs:
   custom-prompt:
     description: 'Custom instructions/prompt to guide the AI reviewer'
     required: false
+  model:
+    description: 'Gemini model identifier (e.g. gemini-2.5-flash, gemini-2.5-pro, gemini-1.5-flash)'
+    required: false
+    default: 'gemini-2.5-flash'
   fail-on-error:
     description: 'Whether to fail the workflow run if the review agent encounters an error'
     required: false
@@ -69,6 +73,7 @@ runs:
         INPUT_SERVICE_ACCOUNT: ${{ inputs.service-account }}
         INPUT_GCP_PROJECT_ID: ${{ inputs.gcp-project-id }}
         INPUT_GCP_LOCATION: ${{ inputs.gcp-location }}
+        INPUT_MODEL: ${{ inputs.model }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_CUSTOM_PROMPT: ${{ inputs.custom-prompt }}
         INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}

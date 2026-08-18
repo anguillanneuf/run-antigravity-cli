@@ -297,7 +297,23 @@ async def test_lease_agent_config_auth_modes(mock_agent_cls, mock_local_config_c
         capabilities=mock_local_config_cls.call_args.kwargs["capabilities"],
         vertex=True,
         project="my-gcp-project",
-        location="us-central1"
+        location="us-central1",
+        model="gemini-2.5-flash",
+    )
+
+    # 3. Explicit Model mode
+    engine_custom_model = AntigravityReviewEngine(
+        api_key="my-api-key",
+        model="gemini-2.5-pro",
+    )
+    async with engine_custom_model._lease_agent():
+        pass
+
+    mock_local_config_cls.assert_called_with(
+        system_instructions=mock_local_config_cls.call_args.kwargs["system_instructions"],
+        capabilities=mock_local_config_cls.call_args.kwargs["capabilities"],
+        model="gemini-2.5-pro",
+        api_key="my-api-key",
     )
 
 

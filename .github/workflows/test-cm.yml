@@ -115,7 +115,9 @@ jobs:
         run: |
           python3 scripts/setup_cm_config.py \
             --output .codemender/config.yaml \
-            --model "${{ inputs.model || 'gemini-3.5-flash' }}"
+            --model "${{ inputs.model || 'gemini-3.5-flash' }}" \
+            --project-id "${{ vars.GCP_PROJECT_ID }}" \
+            --location "${{ vars.GCP_LOCATION || 'us-central1' }}"
           # Copy to home directory as well for global fallback
           mkdir -p ~/.codemender
           cp .codemender/config.yaml ~/.codemender/config.yaml

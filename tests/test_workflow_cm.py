@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
 """Validation tests for .github/workflows/test-cm.yml workflow file."""
 
 import os
 import re
+import sys
 import pytest
 
 WORKFLOW_PATH = os.path.join(os.path.dirname(__file__), "..", ".github", "workflows", "test-cm.yml")
@@ -57,3 +59,9 @@ def test_referenced_scripts_exist_and_executable():
     for script_rel in scripts:
         script_full = os.path.join(base_dir, script_rel)
         assert os.path.exists(script_full), f"Missing script: {script_rel}"
+
+
+if __name__ == "__main__":
+    import pytest
+    sys.exit(pytest.main([__file__]))
+

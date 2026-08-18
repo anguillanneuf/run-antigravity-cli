@@ -1,0 +1,177 @@
+name: 'CodeMender Security Scan Workflow'
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, ready_for_review]
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      scan_mode:
+        description: 'Scan mode: diff (PR changed files) or full (workspace)'
+        required: false
+        default: 'diff'
+        type: choice
+        options:
+          - diff
+          - full
+      dry_run:
+        description: 'Run in dry-run preflight mode (validate install and auth)'
+        required: false
+        default: false
+        type: boolean
+      model:
+        description: 'CodeMender backend model tier'
+        required: false
+        default: 'gemini-3.5-flash'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read       # Required for checking out code
+  pull-requests: write # Required for posting scan report comments on PRs
+  id-token: write      # Required for requesting OIDC token for Workload Identity Federation
+
+jobs:
+  codemender-scan:
+    name: 'Google CodeMender Security Scan'
+    timeout-minutes: 15
+    # Run scan for PRs from trusted authors or labeled safe-to-test, or via manual workflow_dispatch.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        (
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+          (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
+        ) &&
+        github.event.pull_request.draft == false &&
+        (
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) ||
+          contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          allow-unsafe-pr-checkout: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # -------------------------------------------------------------------------
+      # Authenticate to Google Cloud via Workload Identity Federation (OIDC)
+      # -------------------------------------------------------------------------
+      - name: Authenticate to Google Cloud (OIDC)
+        id: gcp-auth
+        uses: google-github-actions/auth@v3
+        continue-on-error: ${{ inputs.dry_run == true }}
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      # -------------------------------------------------------------------------
+      # Cache and Install CodeMender CLI
+      # -------------------------------------------------------------------------
+      - name: Cache CodeMender CLI
+        id: cache-cm
+        uses: actions/cache@v4
+        with:
+          path: /tmp/cm-bin/cm
+          key: cm-cli-linux-amd64-stable-v1
+
+      - name: Install CodeMender CLI
+        run: |
+          if [ "${{ steps.cache-cm.outputs.cache-hit }}" != "true" ]; then
+            echo "Downloading CodeMender CLI from Google Artifact Registry..."
+            mkdir -p /tmp/cm-dl /tmp/cm-bin
+            curl -fsSL -o /tmp/cm-dl/cm.zip \
+              "https://artifactregistry.googleapis.com/download/v1/projects/cmoc-prod/locations/us/repositories/codemender-cli-production/files/cm%3Astable%3Acm-linux-amd64.zip:download?alt=media"
+            unzip -q -o /tmp/cm-dl/cm.zip -d /tmp/cm-bin
+          fi
+          sudo cp /tmp/cm-bin/cm /usr/local/bin/cm
+          sudo chmod +x /usr/local/bin/cm
+          cm --version || echo "cm installed successfully"
+
+      # -------------------------------------------------------------------------
+      # Generate CI Config & Initialize Workspace
+      # -------------------------------------------------------------------------
+      - name: Generate Headless CodeMender CI Config
+        run: |
+          python3 scripts/setup_cm_config.py \
+            --output .codemender/config.yaml \
+            --model "${{ inputs.model || 'gemini-3.5-flash' }}"
+          # Copy to home directory as well for global fallback
+          mkdir -p ~/.codemender
+          cp .codemender/config.yaml ~/.codemender/config.yaml
+
+      - name: Initialize CodeMender Workspace
+        id: cm-init
+        continue-on-error: ${{ inputs.dry_run == true }}
+        run: |
+          cm init || echo "cm init completed with exit code $?"
+
+      # -------------------------------------------------------------------------
+      # Resolve Changed Files & Run Scan
+      # -------------------------------------------------------------------------
+      - name: Resolve Target Scan Files
+        id: resolve-files
+        run: |
+          SCAN_MODE="${{ inputs.scan_mode || 'diff' }}"
+          FLAGS="--output-github-env"
+          if [ "$SCAN_MODE" = "full" ]; then
+            FLAGS="$FLAGS --full"
+          else
+            FLAGS="$FLAGS --base-ref origin/${{ github.base_ref || 'main' }} --head-ref HEAD"
+          fi
+          python3 scripts/resolve_pr_files.py $FLAGS
+
+      - name: Execute CodeMender Scan (cm find)
+        id: cm-scan
+        run: |
+          SCAN_MODE="${{ inputs.scan_mode || 'diff' }}"
+          FILES="${{ steps.resolve-files.outputs.files }}"
+          FILE_COUNT="${{ steps.resolve-files.outputs.file_count || '0' }}"
+          DRY_RUN="${{ inputs.dry_run || 'false' }}"
+
+          echo "Starting CodeMender scan (Mode: $SCAN_MODE, Files count: $FILE_COUNT, Dry-run: $DRY_RUN)"
+          
+          SCAN_EXIT_CODE=0
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry-run preflight mode enabled. Skipping live backend invocation." | tee scan_output.log
+          elif [ "$SCAN_MODE" != "full" ] && [ "$FILE_COUNT" -eq 0 ]; then
+            echo "No supported code files changed in this PR. Skipping scan." | tee scan_output.log
+          else
+            if [ "$SCAN_MODE" = "full" ]; then
+              cm find . 2>&1 | tee scan_output.log || SCAN_EXIT_CODE=$?
+            else
+              cm find $FILES 2>&1 | tee scan_output.log || SCAN_EXIT_CODE=$?
+            fi
+          fi
+
+          echo "scan_exit_code=$SCAN_EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+      # -------------------------------------------------------------------------
+      # Format Results & Publish Summary / PR Comment
+      # -------------------------------------------------------------------------
+      - name: Publish CodeMender Scan Report
+        if: always()
+        run: |
+          python3 scripts/report_cm_results.py \
+            --output-file scan_output.log \
+            --exit-code "${{ steps.cm-scan.outputs.scan_exit_code || '0' }}" \
+            --files ${{ steps.resolve-files.outputs.files }} \
+            --scan-mode "${{ inputs.scan_mode || 'diff' }}" \
+            ${{ (inputs.dry_run == true) && '--dry-run' || '' }} \
+            --repo "${{ github.repository }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --token "${{ secrets.GITHUB_TOKEN }}"

@@ -13,7 +13,7 @@ This plan guides the creation of the `.github/workflows/test-cm.yml` workflow an
     - [x] Write unit tests for diff resolution, extension filtering, and fallback when no matching files are changed.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [91ef6dd]
 
-## Phase 2: Workflow Definition (`.github/workflows/test-cm.yml`) & Reporting Integration
+## Phase 2: Workflow Definition (`.github/workflows/test-cm.yml`) & Reporting Integration [checkpoint: c715bd7]
 
 - [x] Task: Build complete GitHub Action workflow `.github/workflows/test-cm.yml` [ecebb20]
     - [x] Configure triggers (`pull_request`, `pull_request_target`, `workflow_dispatch` with `scan_mode` and `dry_run` inputs) and author/label gating.
@@ -24,7 +24,7 @@ This plan guides the creation of the `.github/workflows/test-cm.yml` workflow an
 - [x] Task: Workflow syntax validation and simulation tests [3b79ac1]
     - [x] Write validation test to check YAML syntax and action structure against GitHub Actions schema.
     - [x] Execute automated tests and ensure zero errors.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [c715bd7]
 
 ## Phase 3: Documentation & Verification Guide
 

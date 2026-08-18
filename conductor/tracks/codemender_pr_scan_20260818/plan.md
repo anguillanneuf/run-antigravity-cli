@@ -2,7 +2,7 @@
 
 This plan guides the creation of the `.github/workflows/test-cm.yml` workflow and supporting configuration helpers to run `cm find` on PR changes with Workload Identity Federation authentication.
 
-## Phase 1: CI Environment Scaffolding & Configuration Templates
+## Phase 1: CI Environment Scaffolding & Configuration Templates [checkpoint: 91ef6dd]
 
 - [x] Task: Create CodeMender CI configuration template and generator helper [2786df1]
     - [x] Define headless configuration template (`.codemender/config.yaml`) with `tools.confirm_commands: false`, `tools.confirm_writes: false`, `sandbox.enabled: false`, supported scan extensions, and `model: "gemini-3.5-flash"`.
@@ -11,7 +11,7 @@ This plan guides the creation of the `.github/workflows/test-cm.yml` workflow an
 - [x] Task: Create PR diff file extraction and extension filtering logic [91ef6dd]
     - [x] Write script/helper (`scripts/resolve_pr_files.py`) to parse PR diff / git diff against base ref and filter supported extensions.
     - [x] Write unit tests for diff resolution, extension filtering, and fallback when no matching files are changed.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [91ef6dd]
 
 ## Phase 2: Workflow Definition (`.github/workflows/test-cm.yml`) & Reporting Integration
 

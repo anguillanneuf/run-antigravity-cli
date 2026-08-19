@@ -109,3 +109,21 @@ def test_main_cli(tmp_path, monkeypatch, capsys):
     content = target.read_text(encoding="utf-8")
     assert 'project: "cli-proj"' in content
     assert 'location: "us-central1"' in content
+
+
+def test_main_cli_with_google_cloud_project_env(tmp_path, monkeypatch, capsys):
+    from scripts.setup_cm_config import main
+    target = tmp_path / "env_config.yaml"
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "env-gcp-project")
+    monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
+    monkeypatch.setattr("sys.argv", [
+        "setup_cm_config.py",
+        "--output", str(target),
+    ])
+    main()
+
+    captured = capsys.readouterr()
+    assert "successfully generated" in captured.out
+    assert target.exists()
+    content = target.read_text(encoding="utf-8")
+    assert 'project: "env-gcp-project"' in content

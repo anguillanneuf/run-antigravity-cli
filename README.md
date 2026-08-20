@@ -190,7 +190,7 @@ jobs:
 This repository also includes automated cybersecurity vulnerability scanning powered by the **Google CodeMender CLI (`cm`)** in `.github/workflows/test-cm.yml`.
 
 ### How It Works
-1. **Keyless Authentication**: Uses Google Cloud Workload Identity Federation (WIF) to exchange GitHub Actions OIDC tokens for Google Cloud credentials.
+1. **Keyless Authentication & ADC Generation**: Uses Google Cloud Workload Identity Federation (WIF) with `google-github-actions/auth@v3` (`create_credentials_file: true`, `export_environment_variables: true`) to generate Application Default Credentials (ADC) and export `GOOGLE_CLOUD_PROJECT` for CodeMender.
 2. **Autonomous Tool Setup & Caching**: Downloads and caches the CodeMender Linux CLI binary directly from Google Artifact Registry.
 3. **Headless CI Configuration**: Automatically generates non-interactive `.codemender/config.yaml` with safety confirmations bypassed for CI runners.
 4. **Target File Resolution**: Dynamically calculates modified files from the Pull Request diff and filters for supported programming language extensions.
@@ -205,6 +205,7 @@ Configure the following GitHub repository variables in **Settings > Secrets and 
 * `GCP_PROJECT_ID`: Your Google Cloud Project ID.
 * `GCP_WORKLOAD_IDENTITY_PROVIDER`: Full resource path of the Workload Identity Provider.
 * `GCP_SERVICE_ACCOUNT_EMAIL`: Email of the impersonated Service Account.
+* `GCP_LOCATION`: Google Cloud region for CodeMender / Vertex AI backend (e.g. `us-central1`).
 
 ### Manual Triggering (`workflow_dispatch`)
 You can trigger a scan manually with custom inputs from GitHub Actions:

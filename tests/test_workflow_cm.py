@@ -32,11 +32,15 @@ def test_workflow_content_and_structure():
     assert "pull-requests: write" in content
     assert "id-token: write" in content
 
-    # Verify Workload Identity Federation configuration
+    # Verify Workload Identity Federation and ADC configuration
     assert "google-github-actions/auth@v3" in content
     assert "vars.GCP_PROJECT_ID" in content
     assert "vars.GCP_WORKLOAD_IDENTITY_PROVIDER" in content
     assert "vars.GCP_SERVICE_ACCOUNT_EMAIL" in content
+    assert "create_credentials_file: true" in content
+    assert "export_environment_variables: true" in content
+    assert "GOOGLE_CLOUD_PROJECT" in content
+    assert "CLOUDSDK_CORE_PROJECT" in content
 
     # Verify Artifact Registry CLI download URL
     assert "artifactregistry.googleapis.com" in content

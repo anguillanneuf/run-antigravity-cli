@@ -54,6 +54,10 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      GCP_LOCATION: ${{ vars.GCP_LOCATION || 'us-central1' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -63,9 +67,9 @@ jobs:
           allow-unsafe-pr-checkout: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       # -------------------------------------------------------------------------
       # Authenticate to Google Cloud via Workload Identity Federation (OIDC)
@@ -78,6 +82,8 @@ jobs:
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+          create_credentials_file: true
+          export_environment_variables: true
 
       # -------------------------------------------------------------------------
       # Cache and Install CodeMender CLI

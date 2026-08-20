@@ -52,6 +52,7 @@ async def main_async() -> (
     custom_prompt = os.environ.get("INPUT_CUSTOM-PROMPT") or os.environ.get(
         "INPUT_CUSTOM_PROMPT"
     )
+    model = os.environ.get("INPUT_MODEL") or os.environ.get("GEMINI_MODEL")
 
     max_diff_lines_raw = os.environ.get("INPUT_MAX-DIFF-LINES") or os.environ.get(
         "INPUT_MAX_DIFF_LINES"
@@ -144,6 +145,7 @@ async def main_async() -> (
             gcp_project_id=gcp_project_id,
             gcp_location=gcp_location,
             custom_prompt=custom_prompt,
+            model=model,
         )
         comments = await engine.run_review(diff_text, changed_lines)
 

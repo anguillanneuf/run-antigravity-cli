@@ -63,8 +63,9 @@ jobs:
         uses: ./
         with:
           gcp-project-id: ${{ vars.GCP_PROJECT_ID }}
-          gcp-location: ${{ vars.GCP_LOCATION }}
+          gcp-location: ${{ vars.GCP_LOCATION || 'global' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          model: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
           fail-on-error: true
           custom-prompt: |
             Please analyze the following pull request with extreme care. Focus on:

@@ -1,0 +1,8 @@
+{
+  "id": "codemender_pr_scan_20260818",
+  "type": "Feature",
+  "status": "new",
+  "created_at": "2026-08-18T21:56:00Z",
+  "updated_at": "2026-08-18T21:56:00Z",
+  "description": "Explore and integrate Google CodeMender CLI in GitHub Actions (.github/workflows/test-cm.yml) to run cm find on PR changes with WIF authentication."
+}

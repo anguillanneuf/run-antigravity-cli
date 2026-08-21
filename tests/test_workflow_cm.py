@@ -47,10 +47,13 @@ def test_workflow_content_and_structure():
     assert "cmoc-prod" in content
     assert "codemender-cli-production" in content
 
-    # Verify referenced scripts
+    # Verify referenced scripts and sandboxing config
     assert "scripts/setup_cm_config.py" in content
     assert "scripts/resolve_pr_files.py" in content
     assert "scripts/report_cm_results.py" in content
+    assert "~/.codemender/config.yaml" in content
+    assert "--absolute" in content
+    assert 'cm find "$(pwd)"' in content
 
 
 def test_referenced_scripts_exist_and_executable():

@@ -25,6 +25,7 @@ def generate_cm_config(
     sandbox_network_profile: str = "permissive-open",
     extra_extensions: Optional[List[str]] = None,
     extra_exclude_dirs: Optional[List[str]] = None,
+    project_paths: Optional[List[str]] = None,
     build_command: str = "",
     project_id: Optional[str] = None,
     location: Optional[str] = None,
@@ -59,7 +60,7 @@ def generate_cm_config(
             "max_file_size_kb": 500,
             "incremental": True,
         },
-        "project_paths": [],
+        "project_paths": project_paths if project_paths is not None else [],
         "output": {
             "format": output_format,
         },
@@ -107,6 +108,7 @@ def render_cm_config_yaml(config: Dict[str, Any]) -> str:
     inc_exts = _format_yaml_list(config["scan"]["extensions"]["include"])
     exc_exts = _format_yaml_list(config["scan"]["extensions"]["exclude"])
     exc_dirs = _format_yaml_list(config["scan"]["exclude_dirs"])
+    proj_paths = _format_yaml_list(config.get("project_paths", []))
     sandbox_en = "true" if config["sandbox"]["enabled"] else "false"
     cleanup_br = "true" if config["tools"]["cleanup_candidate_branches"] else "false"
 
@@ -134,7 +136,7 @@ scan:
   incremental: true
 
 # Agent file system boundaries (empty = current scan target directory, .codemender, and /tmp)
-project_paths: []
+project_paths: {proj_paths}
 
 # Output format for scan and verify reports
 output:
@@ -146,7 +148,7 @@ tools:
   confirm_writes: false
   cleanup_candidate_branches: {cleanup_br}
 
-# Sandbox execution parameters
+# Sandbox execution parameters (disabled for ephemeral Docker / CI runners)
 sandbox:
   enabled: {sandbox_en}
   mounts:
@@ -177,16 +179,18 @@ model: "{config["model"]}"
 
 
 def write_cm_config(
-    output_path: str = ".codemender/config.yaml",
+    output_path: str = "~/.codemender/config.yaml",
     model: str = "gemini-3.5-flash",
     output_format: str = "table",
     sandbox_enabled: bool = False,
     sandbox_network_profile: str = "permissive-open",
     extra_extensions: Optional[List[str]] = None,
     extra_exclude_dirs: Optional[List[str]] = None,
+    project_paths: Optional[List[str]] = None,
     build_command: str = "",
     project_id: Optional[str] = None,
     location: Optional[str] = None,
+    also_write_workspace_config: bool = False,
 ) -> str:
     """Generate and write the CodeMender config.yaml file to disk."""
     config = generate_cm_config(
@@ -196,30 +200,40 @@ def write_cm_config(
         sandbox_network_profile=sandbox_network_profile,
         extra_extensions=extra_extensions,
         extra_exclude_dirs=extra_exclude_dirs,
+        project_paths=project_paths,
         build_command=build_command,
         project_id=project_id,
         location=location,
     )
     yaml_content = render_cm_config_yaml(config)
 
-    dir_name = os.path.dirname(output_path)
+    expanded_output_path = os.path.expanduser(output_path)
+    dir_name = os.path.dirname(expanded_output_path)
     if dir_name:
         os.makedirs(dir_name, exist_ok=True)
 
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(expanded_output_path, "w", encoding="utf-8") as f:
         f.write(yaml_content)
 
-    return output_path
+    if also_write_workspace_config:
+        ws_path = os.path.join(".codemender", "config.yaml")
+        os.makedirs(".codemender", exist_ok=True)
+        with open(ws_path, "w", encoding="utf-8") as f:
+            f.write(yaml_content)
+
+    return expanded_output_path
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Setup CodeMender headless CI configuration.")
-    parser.add_argument("--output", default=".codemender/config.yaml", help="Path to config.yaml")
+    parser.add_argument("--output", default="~/.codemender/config.yaml", help="Path to config.yaml (e.g. ~/.codemender/config.yaml or .codemender/config.yaml)")
     parser.add_argument("--model", default="gemini-3.5-flash", help="Model intelligence tier")
     parser.add_argument("--format", default="table", choices=["table", "json", "sarif"], help="Output format")
-    parser.add_argument("--sandbox", action="store_true", default=False, help="Enable OS sandbox")
+    parser.add_argument("--sandbox", action="store_true", default=False, help="Enable OS sandbox (default: False for CI/Docker runners)")
     parser.add_argument("--network-profile", default="permissive-open", help="Sandbox network profile")
     parser.add_argument("--extra-ext", nargs="*", default=[], help="Extra extensions to include")
+    parser.add_argument("--project-paths", nargs="*", default=[], help="Agent allowed file system roots")
+    parser.add_argument("--sync-workspace", action="store_true", default=False, help="Also write copy to .codemender/config.yaml")
     parser.add_argument(
         "--project-id",
         default=os.getenv("GCP_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT") or "",
@@ -239,8 +253,10 @@ def main() -> None:
         sandbox_enabled=args.sandbox,
         sandbox_network_profile=args.network_profile,
         extra_extensions=args.extra_ext,
+        project_paths=args.project_paths if args.project_paths else None,
         project_id=args.project_id if args.project_id else None,
         location=args.location if args.location else None,
+        also_write_workspace_config=args.sync_workspace,
     )
     print(f"CodeMender configuration successfully generated at: {written_path}")
 

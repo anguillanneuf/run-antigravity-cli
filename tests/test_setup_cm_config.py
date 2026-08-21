@@ -127,3 +127,30 @@ def test_main_cli_with_google_cloud_project_env(tmp_path, monkeypatch, capsys):
     assert target.exists()
     content = target.read_text(encoding="utf-8")
     assert 'project: "env-gcp-project"' in content
+
+
+def test_write_cm_config_tilde_expansion(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    result_path = write_cm_config(
+        output_path="~/.codemender/config.yaml",
+        project_id="tilde-proj",
+    )
+    assert os.path.exists(result_path)
+    assert str(tmp_path) in result_path
+    with open(result_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "sandbox:" in content
+    assert "enabled: false" in content
+    assert 'project: "tilde-proj"' in content
+
+
+def test_generate_cm_config_with_project_paths():
+    config = generate_cm_config(
+        project_paths=["/home/runner/work/my-repo", "/tmp/scan"],
+    )
+    assert config["project_paths"] == ["/home/runner/work/my-repo", "/tmp/scan"]
+    assert config["sandbox"]["enabled"] is False
+
+    yaml_text = render_cm_config_yaml(config)
+    assert 'project_paths: ["/home/runner/work/my-repo", "/tmp/scan"]' in yaml_text
+    assert "sandbox:\n  enabled: false" in yaml_text

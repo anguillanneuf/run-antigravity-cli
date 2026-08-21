@@ -119,14 +119,14 @@ jobs:
 
       - name: Generate Headless CodeMender CI Config
         run: |
+          mkdir -p ~/.codemender .codemender
           python3 scripts/setup_cm_config.py \
-            --output .codemender/config.yaml \
+            --output ~/.codemender/config.yaml \
             --model "${{ inputs.model || 'gemini-3.5-flash' }}" \
             --project-id "${{ vars.GCP_PROJECT_ID }}" \
             --location "${{ vars.GCP_LOCATION || 'us-central1' }}"
-          # Copy to home directory as well for global fallback
-          mkdir -p ~/.codemender
-          cp .codemender/config.yaml ~/.codemender/config.yaml
+          # Also synchronize to repository root for workspace-level fallback
+          cp ~/.codemender/config.yaml .codemender/config.yaml
 
       # -------------------------------------------------------------------------
       # Resolve Changed Files & Run Scan
@@ -135,7 +135,7 @@ jobs:
         id: resolve-files
         run: |
           SCAN_MODE="${{ inputs.scan_mode || 'diff' }}"
-          FLAGS="--output-github-env"
+          FLAGS="--output-github-env --absolute"
           if [ "$SCAN_MODE" = "full" ]; then
             FLAGS="$FLAGS --full"
           else
@@ -161,13 +161,20 @@ jobs:
             echo "No supported code files changed in this PR. Skipping scan." | tee scan_output.log
           else
             if [ "$SCAN_MODE" = "full" ]; then
-              cm find . 2>&1 | tee -a scan_output.log || SCAN_EXIT_CODE=$?
+              # Always pass absolute paths (e.g. cm find $(pwd)) to prevent sandbox root constriction
+              cm find "$(pwd)" 2>&1 | tee -a scan_output.log || SCAN_EXIT_CODE=$?
             else
               for file in $FILES; do
-                if [ -f "$file" ]; then
-                  echo "=== Scanning $file ===" | tee -a scan_output.log
+                # Always pass absolute paths (e.g. cm find $(pwd)/src) when invoking the CLI
+                if [[ "$file" != /* ]]; then
+                  TARGET_PATH="$(pwd)/$file"
+                else
+                  TARGET_PATH="$file"
+                fi
+                if [ -f "$TARGET_PATH" ]; then
+                  echo "=== Scanning $TARGET_PATH ===" | tee -a scan_output.log
                   FILE_EXIT_CODE=0
-                  cm find "$file" 2>&1 | tee -a scan_output.log || FILE_EXIT_CODE=$?
+                  cm find "$TARGET_PATH" 2>&1 | tee -a scan_output.log || FILE_EXIT_CODE=$?
                   if [ "$FILE_EXIT_CODE" -ne 0 ]; then
                     SCAN_EXIT_CODE=$FILE_EXIT_CODE
                   fi

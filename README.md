@@ -192,10 +192,20 @@ This repository also includes automated cybersecurity vulnerability scanning pow
 ### How It Works
 1. **Keyless Authentication & ADC Generation**: Uses Google Cloud Workload Identity Federation (WIF) with `google-github-actions/auth@v3` (`create_credentials_file: true`, `export_environment_variables: true`) to generate Application Default Credentials (ADC) and export `GOOGLE_CLOUD_PROJECT` for CodeMender.
 2. **Autonomous Tool Setup & Caching**: Downloads and caches the CodeMender Linux CLI binary directly from Google Artifact Registry.
-3. **Headless CI Configuration**: Automatically generates non-interactive `.codemender/config.yaml` with safety confirmations bypassed for CI runners.
-4. **Target File Resolution**: Dynamically calculates modified files from the Pull Request diff and filters for supported programming language extensions.
-5. **Vulnerability Discovery**: Executes `cm find` on the changed files (or full workspace).
+3. **Headless CI Configuration**: Automatically generates non-interactive `~/.codemender/config.yaml` with safety confirmations bypassed and sandbox disabled for CI/container runners.
+4. **Target File Resolution**: Dynamically calculates modified files from the Pull Request diff and resolves absolute paths for supported programming language extensions.
+5. **Vulnerability Discovery**: Executes `cm find` on the changed files with absolute paths (or full workspace root).
 6. **Actionable Reporting**: Publishes structured findings to `$GITHUB_STEP_SUMMARY` and posts/updates an interactive PR comment.
+
+### 🛡️ Sandboxing & CI Runner Configuration
+If you are already running CodeMender inside an ephemeral Docker container or CI runner (which is already isolated), disable CodeMender’s built-in namespace sandbox in `~/.codemender/config.yaml`:
+
+```yaml
+sandbox:
+  enabled: false
+```
+
+Always pass absolute paths (e.g. `cm find $(pwd)/src`) when invoking the CLI. This prevents CodeMender from constricting allowed filesystem roots to individual relative file targets, avoiding sandbox boundary violations when exploring related project files.
 
 ### GCP IAM Permissions & Repository Variables
 Grant the Workload Identity Federation Service Account the following IAM role:

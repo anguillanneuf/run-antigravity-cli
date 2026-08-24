@@ -60,7 +60,7 @@ def generate_cm_config(
             "max_file_size_kb": 500,
             "incremental": True,
         },
-        "project_paths": project_paths if project_paths is not None else [],
+        "project_paths": project_paths if project_paths is not None else ["."],
         "output": {
             "format": output_format,
         },
@@ -108,7 +108,7 @@ def render_cm_config_yaml(config: Dict[str, Any]) -> str:
     inc_exts = _format_yaml_list(config["scan"]["extensions"]["include"])
     exc_exts = _format_yaml_list(config["scan"]["extensions"]["exclude"])
     exc_dirs = _format_yaml_list(config["scan"]["exclude_dirs"])
-    proj_paths = _format_yaml_list(config.get("project_paths", []))
+    proj_paths = _format_yaml_list(config.get("project_paths", ["."]))
     sandbox_en = "true" if config["sandbox"]["enabled"] else "false"
     cleanup_br = "true" if config["tools"]["cleanup_candidate_branches"] else "false"
 
@@ -135,7 +135,7 @@ scan:
   max_file_size_kb: {config["scan"]["max_file_size_kb"]}
   incremental: true
 
-# Agent file system boundaries (empty = current scan target directory, .codemender, and /tmp)
+# Agent file system boundaries (allowed roots for reading surrounding project context)
 project_paths: {proj_paths}
 
 # Output format for scan and verify reports

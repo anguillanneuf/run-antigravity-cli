@@ -52,6 +52,8 @@ def test_workflow_content_and_structure():
     assert "scripts/resolve_pr_files.py" in content
     assert "scripts/report_cm_results.py" in content
     assert "~/.codemender/config.yaml" in content
+    assert "--project-paths" in content
+    assert "--sync-workspace" in content
     assert "--absolute" in content
     assert 'cm find "$(pwd)"' in content
 

@@ -198,14 +198,15 @@ This repository also includes automated cybersecurity vulnerability scanning pow
 6. **Actionable Reporting**: Publishes structured findings to `$GITHUB_STEP_SUMMARY` and posts/updates an interactive PR comment.
 
 ### 🛡️ Sandboxing & CI Runner Configuration
-If you are already running CodeMender inside an ephemeral Docker container or CI runner (which is already isolated), disable CodeMender’s built-in namespace sandbox in `~/.codemender/config.yaml`:
+If you are running CodeMender inside an ephemeral Docker container or CI runner (which is already isolated), configure `project_paths: ["."]` and disable namespace sandboxing in `~/.codemender/config.yaml`:
 
 ```yaml
+project_paths: ["."]
 sandbox:
   enabled: false
 ```
 
-Always pass absolute paths (e.g. `cm find $(pwd)/src`) when invoking the CLI. This prevents CodeMender from constricting allowed filesystem roots to individual relative file targets, avoiding sandbox boundary violations when exploring related project files.
+Setting `project_paths: ["."]` declares the repository workspace as an allowed filesystem root, allowing CodeMender's agent to inspect parent directories, imported modules, and related project context during scans without triggering sandbox violation warnings. Always pass absolute paths (e.g. `cm find $(pwd)/src`) when invoking the CLI.
 
 ### GCP IAM Permissions & Repository Variables
 Grant the Workload Identity Federation Service Account the following IAM role:

@@ -24,6 +24,7 @@ def test_generate_cm_config_defaults():
     assert "vendor" in config["scan"]["exclude_dirs"]
     assert config["vcs"]["type"] == "git"
     assert config["server"] == {}
+    assert config["project_paths"] == ["."]
 
 
 def test_generate_cm_config_with_server_project_and_location():

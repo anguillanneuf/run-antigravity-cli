@@ -124,9 +124,9 @@ jobs:
             --output ~/.codemender/config.yaml \
             --model "${{ inputs.model || 'gemini-3.5-flash' }}" \
             --project-id "${{ vars.GCP_PROJECT_ID }}" \
-            --location "${{ vars.GCP_LOCATION || 'us-central1' }}"
-          # Also synchronize to repository root for workspace-level fallback
-          cp ~/.codemender/config.yaml .codemender/config.yaml
+            --location "${{ vars.GCP_LOCATION || 'us-central1' }}" \
+            --project-paths "." \
+            --sync-workspace
 
       # -------------------------------------------------------------------------
       # Resolve Changed Files & Run Scan

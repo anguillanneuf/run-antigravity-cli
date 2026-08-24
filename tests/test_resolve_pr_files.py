@@ -106,3 +106,15 @@ def test_main_cli(tmp_path, monkeypatch, capsys):
     content = output_file.read_text()
     assert "file_count=2" in content
     assert "files=src/entrypoint.py src/github_client.py" in content
+
+
+def test_resolve_target_scan_files_absolute(tmp_path):
+    (tmp_path / "main.py").write_text("print('test')")
+    targets = resolve_target_scan_files(
+        root_dir=str(tmp_path),
+        full_scan=True,
+        absolute=True,
+    )
+    assert len(targets) == 1
+    assert os.path.isabs(targets[0])
+    assert targets[0] == os.path.abspath(os.path.join(str(tmp_path), "main.py"))

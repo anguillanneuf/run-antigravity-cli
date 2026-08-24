@@ -76,6 +76,7 @@ def resolve_target_scan_files(
     root_dir: str = ".",
     extensions: Optional[List[str]] = None,
     full_scan: bool = False,
+    absolute: bool = False,
 ) -> List[str]:
     """Resolve target files to be scanned based on diff or full scan mode."""
     if full_scan:
@@ -86,24 +87,33 @@ def resolve_target_scan_files(
             for fn in filenames:
                 rel_path = os.path.relpath(os.path.join(root, fn), root_dir)
                 all_files.append(rel_path)
-        return filter_scan_files(all_files, extensions=extensions)
+        files = filter_scan_files(all_files, extensions=extensions)
     else:
         changed = get_changed_files_from_git(base_ref=base_ref, head_ref=head_ref)
-        return filter_scan_files(changed, extensions=extensions)
+        files = filter_scan_files(changed, extensions=extensions)
+
+    if absolute:
+        abs_root = os.path.abspath(root_dir)
+        return [os.path.abspath(os.path.join(abs_root, f)) for f in files]
+    return files
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Resolve target files for CodeMender scan.")
     parser.add_argument("--base-ref", default=os.getenv("GITHUB_BASE_REF", "origin/main"), help="Git base ref")
     parser.add_argument("--head-ref", default=os.getenv("GITHUB_SHA", "HEAD"), help="Git head ref")
+    parser.add_argument("--root-dir", default=".", help="Root directory for file resolution")
     parser.add_argument("--full", action="store_true", default=False, help="Perform full repo scan")
+    parser.add_argument("--absolute", action="store_true", default=False, help="Output absolute file paths for CLI invocation")
     parser.add_argument("--output-github-env", action="store_true", default=False, help="Write output to GITHUB_OUTPUT")
 
     args = parser.parse_args()
     target_files = resolve_target_scan_files(
         base_ref=args.base_ref,
         head_ref=args.head_ref,
+        root_dir=args.root_dir,
         full_scan=args.full,
+        absolute=args.absolute,
     )
 
     file_list_str = " ".join(target_files)

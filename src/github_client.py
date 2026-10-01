@@ -55,7 +55,7 @@ class GitHubEventContext:
             except (FileNotFoundError, json.JSONDecodeError):
                 payload = {}
 
-            if event_name == "pull_request":
+            if event_name in ("pull_request", "pull_request_target"):
                 pr_payload = payload.get("pull_request", {})
                 pr_number = pr_payload.get("number")
                 head_sha = pr_payload.get("head", {}).get("sha")

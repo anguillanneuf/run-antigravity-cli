@@ -61,8 +61,6 @@ on:
 
 permissions:
   pull-requests: write # Required to post review comments
-  id-token: write      # Required for requesting JWT OIDC token from Google Cloud OIDC Workload Identity Federation
-
 
 jobs:
   review:
@@ -122,8 +120,8 @@ For enterprise security compliance, we highly recommend using **Google Cloud Wor
 ```bash
 GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)   
 GOOGLE_CLOUD_PROJECT_NUMBER=$(gcloud projects describe $GOOGLE_CLOUD_PROJECT --format="value(projectNumber)")
-REPO_OWNER=
-REPO_NAME=
+REPO_OWNER="YOUR_GITHUB_ORG"
+REPO_NAME="YOUR_REPO_NAME"
 
 gcloud iam workload-identity-pools create "github-pool" \
   --project=$GOOGLE_CLOUD_PROJECT \
@@ -172,7 +170,7 @@ jobs:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }} # Store 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider' in this Action variable
 
       - name: Run Antigravity Review Agent
-        uses: google/run-antigravity-cli@v1 # Replace with your repo name / tag
+        uses: anguillanneuf/run-antigravity-cli@master
         with:
           gcp-project-id: ${{ vars.GCP_PROJECT_ID }}
           gcp-location: ${{ vars.GCP_LOCATION || 'global' }}

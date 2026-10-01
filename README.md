@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Antigravity Review Agent
-        uses: anguillannef/run-antigravity-cli@master
+        uses: anguillanneuf/run-antigravity-cli@master
         with:
           api-key: ${{ secrets.GEMINI_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -118,33 +118,34 @@ For enterprise security compliance, we highly recommend using **Google Cloud Wor
 
 ### Step 1: Configure GCP Workload Identity Pool
 1. Create a Workload Identity Pool and Provider in Google Cloud IAM:
-   ```bash
-  GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)   
-  GOOGLE_CLOUD_PROJECT_NUMBER=$(gcloud projects describe $GOOGLE_CLOUD_PROJECT --format="value(projectNumber)")
-  REPO_OWNER=
-  REPO_NAME=
 
-   gcloud iam workload-identity-pools create "github-pool" \
-     --project=$GOOGLE_CLOUD_PROJECT \
-     --location="global" \
-     --display-name="GitHub Pool"
+```bash
+GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)   
+GOOGLE_CLOUD_PROJECT_NUMBER=$(gcloud projects describe $GOOGLE_CLOUD_PROJECT --format="value(projectNumber)")
+REPO_OWNER=
+REPO_NAME=
 
-   gcloud iam workload-identity-pools providers create-oidc "github-provider" \
-     --project=$GOOGLE_CLOUD_PROJECT \
-     --location="global" \
-     --workload-identity-pool="github-pool" \
-     --display-name="GitHub Provider" \
-     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-     --attribute-condition='assertion.repository=="$REPO_OWNER/$REPO_NAME"' \
-     --issuer-uri="https://token.actions.githubusercontent.com"
-   ```
+gcloud iam workload-identity-pools create "github-pool" \
+  --project=$GOOGLE_CLOUD_PROJECT \
+  --location="global" \
+  --display-name="GitHub Pool"
+
+gcloud iam workload-identity-pools providers create-oidc "github-provider" \
+  --project=$GOOGLE_CLOUD_PROJECT \
+  --location="global" \
+  --workload-identity-pool="github-pool" \
+  --display-name="GitHub Provider" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --attribute-condition="assertion.repository=='$REPO_OWNER/$REPO_NAME'" \
+  --issuer-uri="https://token.actions.githubusercontent.com"
+```
 
 2. Grant access to [Agent Platform](https://docs.cloud.google.com/iam/docs/roles-permissions/aiplatform#aiplatform.user) resources on the federated identity:
-   ```bash
-  gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
-    --role="roles/aiplatform.user" \
-    --member="principalSet://iam.googleapis.com/projects/$GOOGLE_CLOUD_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/$REPO_OWNER/$REPO_NAME"
-   ```
+```bash
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --role="roles/aiplatform.user" \
+  --member="principalSet://iam.googleapis.com/projects/$GOOGLE_CLOUD_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/$REPO_OWNER/$REPO_NAME"
+```
 
 ### Step 2: Configure your GitHub Actions Workflow
 Ensure your workflow specifies `permissions: id-token: write` and configures the GCP auth step:
@@ -172,6 +173,7 @@ jobs:
 
       - name: Run Antigravity Review Agent
         uses: google/run-antigravity-cli@v1 # Replace with your repo name / tag
+        with:
           gcp-project-id: ${{ vars.GCP_PROJECT_ID }}
           gcp-location: ${{ vars.GCP_LOCATION || 'global' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

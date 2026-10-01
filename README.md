@@ -73,9 +73,6 @@ jobs:
        contains(github.event.comment.body, '/review'))
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Run Antigravity Review Agent
         uses: google/run-antigravity-cli@v1 # Replace with your repo name / tag
         with:
@@ -105,7 +102,7 @@ To run this code review agent on an external repository:
           fail-on-error: true
 ```
 
-That's it! When a Pull Request is opened in the external repository, GitHub will automatically check out this action, load its composite steps, install dependencies, and run the review under the external repository's context.
+That's it! When a Pull Request is opened in the external repository, GitHub will automatically download this action, load its composite steps, install dependencies, and run the review under the external repository's context. An `actions/checkout` step is not needed because the review agent retrieves the PR diff directly via the GitHub REST API.
 
 ---
 
@@ -167,17 +164,14 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Authenticate to Google Cloud (OIDC)
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'antigravity-reviewer@YOUR_PROJECT_ID.iam.gserviceaccount.com'
 
       - name: Run Antigravity Review Agent
-        uses: ./
+        uses: google/run-antigravity-cli@v1 # Replace with your repo name / tag
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           fail-on-error: true

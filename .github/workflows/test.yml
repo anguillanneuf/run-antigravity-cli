@@ -43,6 +43,7 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
+      # Checkout is required here because this CI workflow tests the local action via 'uses: ./'
       - name: Checkout Code
         uses: actions/checkout@v7
         with:

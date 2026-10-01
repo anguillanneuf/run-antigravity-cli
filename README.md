@@ -60,7 +60,6 @@ on:
     types: [created]
 
 permissions:
-  contents: read
   pull-requests: write # Required to post review comments
 
 jobs:
@@ -73,11 +72,8 @@ jobs:
        contains(github.event.comment.body, '/review'))
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Run Antigravity Review Agent
-        uses: google/run-antigravity-cli@v1 # Replace with your repo name / tag
+        uses: anguillanneuf/run-antigravity-cli@master
         with:
           api-key: ${{ secrets.GEMINI_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,14 +94,19 @@ To run this code review agent on an external repository:
 
 ```yaml
       - name: Run Antigravity Review Agent
-        uses: google/run-antigravity-cli@v1 # Point to this repo name and tag/branch
+        uses: anguillanneuf/run-antigravity-cli@master
         with:
           api-key: ${{ secrets.GEMINI_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           fail-on-error: true
+          custom-prompt: |
+            Please analyze the following pull request with extreme care. Focus on:
+            1. Security vulnerabilities (OWASP Top 10, credential leaks, unsafe imports).
+            2. Code quality, optimization, and potential bugs.
+            3. ..
 ```
 
-That's it! When a Pull Request is opened in the external repository, GitHub will automatically check out this action, load its composite steps, install dependencies, and run the review under the external repository's context.
+That's it! When a Pull Request is opened in the external repository, GitHub will automatically download this action, load its composite steps, install dependencies, and run the review under the external repository's context. An `actions/checkout` step is not needed because the review agent retrieves the PR diff directly via the GitHub REST API.
 
 ---
 
@@ -115,38 +116,34 @@ For enterprise security compliance, we highly recommend using **Google Cloud Wor
 
 ### Step 1: Configure GCP Workload Identity Pool
 1. Create a Workload Identity Pool and Provider in Google Cloud IAM:
-   ```bash
-   gcloud iam workload-identity-pools create "github-pool" \
-     --project="YOUR_PROJECT_ID" \
-     --location="global" \
-     --display-name="GitHub Pool"
 
-   gcloud iam workload-identity-pools providers create-oidc "github-provider" \
-     --project="YOUR_PROJECT_ID" \
-     --location="global" \
-     --workload-identity-pool="github-pool" \
-     --display-name="GitHub Provider" \
-     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-     --issuer-uri="https://token.actions.githubusercontent.com"
-   ```
+```bash
+GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)   
+GOOGLE_CLOUD_PROJECT_NUMBER=$(gcloud projects describe $GOOGLE_CLOUD_PROJECT --format="value(projectNumber)")
+REPO_OWNER="YOUR_GITHUB_ORG"
+REPO_NAME="YOUR_REPO_NAME"
 
-2. Create a Google Cloud Service Account for Antigravity:
-   ```bash
-   gcloud iam service-accounts create "antigravity-reviewer" \
-     --project="YOUR_PROJECT_ID" \
-     --display-name="Antigravity Reviewer Service Account"
-   ```
+gcloud iam workload-identity-pools create "github-pool" \
+  --project=$GOOGLE_CLOUD_PROJECT \
+  --location="global" \
+  --display-name="GitHub Pool"
 
-3. Allow GitHub repositories to assume the Service Account:
-   ```bash
-   gcloud iam service-accounts add-iam-policy-binding "antigravity-reviewer@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-     --project="YOUR_PROJECT_ID" \
-     --role="roles/iam.workloadIdentityUser" \
-     --member="principalSet://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/YOUR_ORGANIZATION/YOUR_REPO"
-   ```
+gcloud iam workload-identity-pools providers create-oidc "github-provider" \
+  --project=$GOOGLE_CLOUD_PROJECT \
+  --location="global" \
+  --workload-identity-pool="github-pool" \
+  --display-name="GitHub Provider" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --attribute-condition="assertion.repository=='$REPO_OWNER/$REPO_NAME'" \
+  --issuer-uri="https://token.actions.githubusercontent.com"
+```
 
-4. Grant necessary IAM roles to the Service Account.
-   - Agent Platform User
+2. Grant access to [Agent Platform](https://docs.cloud.google.com/iam/docs/roles-permissions/aiplatform#aiplatform.user) resources on the federated identity:
+```bash
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --role="roles/aiplatform.user" \
+  --member="principalSet://iam.googleapis.com/projects/$GOOGLE_CLOUD_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/$REPO_OWNER/$REPO_NAME"
+```
 
 ### Step 2: Configure your GitHub Actions Workflow
 Ensure your workflow specifies `permissions: id-token: write` and configures the GCP auth step:
@@ -159,7 +156,6 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
   pull-requests: write
   id-token: write # Required for requesting the JWT OIDC token
 
@@ -167,20 +163,25 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Authenticate to Google Cloud (OIDC)
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
-          workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'antigravity-reviewer@YOUR_PROJECT_ID.iam.gserviceaccount.com'
+          project_id: ${{ vars.GCP_PROJECT_ID }} # Store your project ID in this Actions variable
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }} # Store 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider' in this Action variable
 
       - name: Run Antigravity Review Agent
-        uses: ./
+        uses: anguillanneuf/run-antigravity-cli@master
         with:
+          gcp-project-id: ${{ vars.GCP_PROJECT_ID }}
+          gcp-location: ${{ vars.GCP_LOCATION || 'global' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          model: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           fail-on-error: true
+          custom-prompt: |
+            Please analyze the following pull request with extreme care. Focus on:
+            1. Security vulnerabilities (OWASP Top 10, credential leaks, unsafe imports).
+            2. Code quality, optimization, and potential bugs.
+            3. ..
 ```
 
 ---

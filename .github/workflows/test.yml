@@ -18,36 +18,71 @@ permissions:
   id-token: write      # Required for requesting JWT OICD token from Google Cloud OIDC Workload Identity Federation
 
 jobs:
+  remove-stale-approval:
+    name: 'Reset Stale Approval on Push'
+    permissions:
+      pull-requests: write
+    if: |
+      github.event_name == 'pull_request_target' &&
+      contains(fromJSON('["synchronize", "reopened"]'), github.event.action) &&
+      github.event.pull_request.head.repo.full_name != github.repository &&
+      !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) &&
+      contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove safe-to-test label on new commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Untrusted fork PR push detected. Removing stale 'safe-to-test' approval label."
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "safe-to-test" || echo "Label already removed"
+
   code-review:
     name: 'Google Antigravity Code Review'
     timeout-minutes: 15
-    # Run review for PRs from trusted authors or labeled safe-to-test, or via /review comment by trusted authors.
-    # Internal PRs run via pull_request, while fork PRs run via pull_request_target.
+    # Gating:
+    # 1. Internal PRs from trusted authors run via pull_request.
+    # 2. Fork PRs from trusted authors run via pull_request_target.
+    # 3. Fork PRs from untrusted authors run ONLY when explicitly labeled 'safe-to-test' (no TOCTOU on synchronize).
+    # 4. PR reviews can also be triggered via '/review' comment by repository maintainers.
     if: |
       (
         (
-          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
-          (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
-        ) &&
-        github.event.pull_request.draft == false &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.draft == false &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+        ) ||
         (
-          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) ||
-          contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+          github.event_name == 'pull_request_target' &&
+          github.event.pull_request.head.repo.full_name != github.repository &&
+          github.event.pull_request.draft == false &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+        ) ||
+        (
+          github.event_name == 'pull_request_target' &&
+          github.event.pull_request.head.repo.full_name != github.repository &&
+          github.event.pull_request.draft == false &&
+          github.event.action == 'labeled' &&
+          github.event.label.name == 'safe-to-test'
+        ) ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request &&
+          contains(github.event.comment.body, '/review') &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
         )
-      ) ||
-      (
-        github.event_name == 'issue_comment' &&
-        github.event.issue.pull_request &&
-        contains(github.event.comment.body, '/review') &&
-        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
       )
     runs-on: ubuntu-latest
     steps:
-      # Checkout is required here because this CI workflow tests the local action via 'uses: ./'
+      # For untrusted fork PRs, checkout trusted base branch to run the review action (uses: ./).
+      # The review engine fetches the PR diff directly via GitHub API and does not need untrusted code checked out.
       - name: Checkout Code
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository && !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)) && (github.base_ref || github.event.repository.default_branch) || (github.event.pull_request.head.sha || github.sha) }}
           allow-unsafe-pr-checkout: true
 
       # -------------------------------------------------------------------------

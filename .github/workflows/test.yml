@@ -24,7 +24,7 @@ jobs:
       pull-requests: write
     if: |
       github.event_name == 'pull_request_target' &&
-      github.event.action == 'synchronize' &&
+      contains(fromJSON('["synchronize", "reopened"]'), github.event.action) &&
       github.event.pull_request.head.repo.full_name != github.repository &&
       !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) &&
       contains(github.event.pull_request.labels.*.name, 'safe-to-test')

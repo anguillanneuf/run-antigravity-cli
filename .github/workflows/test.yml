@@ -47,21 +47,18 @@ jobs:
     # 4. PR reviews can also be triggered via '/review' comment by repository maintainers.
     if: |
       (
-        # Internal PRs from trusted authors
         (
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository &&
           github.event.pull_request.draft == false &&
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
         ) ||
-        # Fork PRs from trusted authors
         (
           github.event_name == 'pull_request_target' &&
           github.event.pull_request.head.repo.full_name != github.repository &&
           github.event.pull_request.draft == false &&
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
         ) ||
-        # Untrusted fork PRs: ONLY when explicitly labeled 'safe-to-test' (prevents TOCTOU on push/synchronize)
         (
           github.event_name == 'pull_request_target' &&
           github.event.pull_request.head.repo.full_name != github.repository &&
@@ -69,7 +66,6 @@ jobs:
           github.event.action == 'labeled' &&
           github.event.label.name == 'safe-to-test'
         ) ||
-        # Maintainer review trigger via issue comment
         (
           github.event_name == 'issue_comment' &&
           github.event.issue.pull_request &&

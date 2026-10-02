@@ -66,21 +66,18 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       (
-        # Internal PRs from trusted authors
         (
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository &&
           github.event.pull_request.draft == false &&
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
         ) ||
-        # Fork PRs from trusted authors
         (
           github.event_name == 'pull_request_target' &&
           github.event.pull_request.head.repo.full_name != github.repository &&
           github.event.pull_request.draft == false &&
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
         ) ||
-        # Untrusted fork PRs: ONLY when explicitly labeled 'safe-to-test' (prevents TOCTOU on push/synchronize)
         (
           github.event_name == 'pull_request_target' &&
           github.event.pull_request.head.repo.full_name != github.repository &&

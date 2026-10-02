@@ -20,3 +20,11 @@ htmlcov/
 
 # Antigravity workspace configs
 .agents/
+scripts/populate_blog_doc.js
+
+# CodeMender
+.cm_project
+
+# Fable
+workflow-security-review.md
+

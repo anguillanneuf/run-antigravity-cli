@@ -36,21 +36,57 @@ permissions:
   id-token: write      # Required for requesting OIDC token for Workload Identity Federation
 
 jobs:
+  remove-stale-approval:
+    name: 'Reset Stale Approval on Push'
+    if: |
+      github.event_name == 'pull_request_target' &&
+      github.event.action == 'synchronize' &&
+      github.event.pull_request.head.repo.full_name != github.repository &&
+      !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) &&
+      contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove safe-to-test label on new commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Untrusted fork PR push detected. Removing stale 'safe-to-test' approval label."
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "safe-to-test" || echo "Label already removed"
+
   codemender-scan:
     name: 'Google CodeMender Security Scan'
     timeout-minutes: 15
-    # Run scan for PRs from trusted authors or labeled safe-to-test, or via manual workflow_dispatch.
+    # Gating:
+    # 1. Manual dispatch always allowed.
+    # 2. Internal PRs from trusted authors run via pull_request.
+    # 3. Fork PRs from trusted authors run via pull_request_target.
+    # 4. Fork PRs from untrusted authors run ONLY when explicitly labeled 'safe-to-test' (no TOCTOU on synchronize).
     if: |
       github.event_name == 'workflow_dispatch' ||
       (
+        # Internal PRs from trusted authors
         (
-          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
-          (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
-        ) &&
-        github.event.pull_request.draft == false &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.draft == false &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+        ) ||
+        # Fork PRs from trusted authors
         (
-          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) ||
-          contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+          github.event_name == 'pull_request_target' &&
+          github.event.pull_request.head.repo.full_name != github.repository &&
+          github.event.pull_request.draft == false &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+        ) ||
+        # Untrusted fork PRs: ONLY when explicitly labeled 'safe-to-test' (prevents TOCTOU on push/synchronize)
+        (
+          github.event_name == 'pull_request_target' &&
+          github.event.pull_request.head.repo.full_name != github.repository &&
+          github.event.pull_request.draft == false &&
+          github.event.action == 'labeled' &&
+          github.event.label.name == 'safe-to-test'
         )
       )
     runs-on: ubuntu-latest
@@ -65,6 +101,24 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           allow-unsafe-pr-checkout: true
+
+      # Checkout trusted scripts from base repository into .trusted-ci to prevent executing
+      # attacker-tampered scripts from untrusted fork PR commits.
+      - name: Checkout Trusted CI Scripts
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.base_ref || 'master' }}
+          path: .trusted-ci
+          sparse-checkout: |
+            scripts
+
+      - name: Set CI Scripts Directory
+        run: |
+          if [ -d ".trusted-ci/scripts" ]; then
+            echo "CI_SCRIPTS_DIR=.trusted-ci/scripts" >> "$GITHUB_ENV"
+          else
+            echo "CI_SCRIPTS_DIR=scripts" >> "$GITHUB_ENV"
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -120,7 +174,7 @@ jobs:
       - name: Generate Headless CodeMender CI Config
         run: |
           mkdir -p ~/.codemender .codemender
-          python3 scripts/setup_cm_config.py \
+          python3 "$CI_SCRIPTS_DIR/setup_cm_config.py" \
             --output ~/.codemender/config.yaml \
             --model "${{ inputs.model || 'gemini-3.5-flash' }}" \
             --project-id "${{ vars.GCP_PROJECT_ID }}" \
@@ -141,7 +195,7 @@ jobs:
           else
             FLAGS="$FLAGS --base-ref origin/${{ github.base_ref || 'main' }} --head-ref HEAD"
           fi
-          python3 scripts/resolve_pr_files.py $FLAGS
+          python3 "$CI_SCRIPTS_DIR/resolve_pr_files.py" $FLAGS
 
       - name: Execute CodeMender Scan (cm find)
         id: cm-scan
@@ -191,7 +245,7 @@ jobs:
       - name: Publish CodeMender Scan Report
         if: always()
         run: |
-          python3 scripts/report_cm_results.py \
+          python3 "$CI_SCRIPTS_DIR/report_cm_results.py" \
             --output-file scan_output.log \
             --exit-code "${{ steps.cm-scan.outputs.scan_exit_code || '0' }}" \
             --files ${{ steps.resolve-files.outputs.files }} \

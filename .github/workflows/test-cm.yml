@@ -114,7 +114,8 @@ jobs:
           if [ -d ".trusted-ci/scripts" ]; then
             echo "CI_SCRIPTS_DIR=.trusted-ci/scripts" >> "$GITHUB_ENV"
           else
-            echo "CI_SCRIPTS_DIR=scripts" >> "$GITHUB_ENV"
+            echo "Error: Trusted CI scripts directory .trusted-ci/scripts not found." >&2
+            exit 1
           fi
 
       - name: Set up Python

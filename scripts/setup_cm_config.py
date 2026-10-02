@@ -6,11 +6,11 @@ import os
 from typing import Any, Dict, List, Optional
 
 DEFAULT_SCAN_EXTENSIONS: List[str] = [
-    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php"
+    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php", ".yaml", ".yml"
 ]
 
 DEFAULT_EXCLUDE_DIRS: List[str] = [
-    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__"
+    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__", ".codemender"
 ]
 
 DEFAULT_EXCLUDE_FILES: List[str] = [

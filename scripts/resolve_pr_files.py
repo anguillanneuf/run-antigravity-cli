@@ -7,11 +7,11 @@ import subprocess
 from typing import List, Optional
 
 DEFAULT_SUPPORTED_EXTENSIONS: List[str] = [
-    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php"
+    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php", ".yaml", ".yml"
 ]
 
 DEFAULT_EXCLUDE_DIRS: List[str] = [
-    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__"
+    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__", ".codemender"
 ]
 
 DEFAULT_EXCLUDE_FILES: List[str] = [

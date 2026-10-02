@@ -104,7 +104,7 @@ jobs:
       - name: Checkout Trusted CI Scripts
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.base_ref || 'master' }}
+          ref: ${{ github.base_ref || github.event.repository.default_branch }}
           path: .trusted-ci
           sparse-checkout: |
             scripts
@@ -190,7 +190,7 @@ jobs:
           if [ "$SCAN_MODE" = "full" ]; then
             FLAGS="$FLAGS --full"
           else
-            FLAGS="$FLAGS --base-ref origin/${{ github.base_ref || 'main' }} --head-ref HEAD"
+            FLAGS="$FLAGS --base-ref origin/${{ github.base_ref || github.event.repository.default_branch }} --head-ref HEAD"
           fi
           python3 "$CI_SCRIPTS_DIR/resolve_pr_files.py" $FLAGS
 

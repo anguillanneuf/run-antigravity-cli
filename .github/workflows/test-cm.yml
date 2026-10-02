@@ -261,7 +261,7 @@ jobs:
           fi
           python3 "$CI_SCRIPTS_DIR/report_cm_results.py" \
             --output-file scan_output.log \
-            --exit-code "${SCAN_EXIT_CODE:-0}" \
+            --exit-code "${SCAN_EXIT_CODE:-1}" \
             --files $FILES \
             --scan-mode "$SCAN_MODE" \
             "${EXTRA_ARGS[@]}" \

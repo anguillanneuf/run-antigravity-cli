@@ -252,14 +252,14 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -f
           EXTRA_ARGS=()
           if [ "$DRY_RUN" = "true" ] || [ "$DRY_RUN" = "True" ]; then
             EXTRA_ARGS+=(--dry-run)
           fi
-          python3 scripts/report_cm_results.py \
+          python3 "$CI_SCRIPTS_DIR/report_cm_results.py" \
             --output-file scan_output.log \
             --exit-code "${SCAN_EXIT_CODE:-0}" \
             --files $FILES \
@@ -267,4 +267,4 @@ jobs:
             "${EXTRA_ARGS[@]}" \
             --repo "$REPO" \
             --pr-number "$PR_NUMBER" \
-            --token "$TOKEN"
+

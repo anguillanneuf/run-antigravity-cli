@@ -6,7 +6,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 DEFAULT_SCAN_EXTENSIONS: List[str] = [
-    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php"
+    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php", ".yaml", ".yml"
 ]
 
 DEFAULT_EXCLUDE_DIRS: List[str] = [

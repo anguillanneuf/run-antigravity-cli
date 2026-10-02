@@ -38,6 +38,8 @@ permissions:
 jobs:
   remove-stale-approval:
     name: 'Reset Stale Approval on Push'
+    permissions:
+      pull-requests: write
     if: |
       github.event_name == 'pull_request_target' &&
       github.event.action == 'synchronize' &&
@@ -109,14 +111,14 @@ jobs:
           sparse-checkout: |
             scripts
 
-      - name: Set CI Scripts Directory
+      - name: Relocate Trusted CI Scripts
         run: |
-          if [ -d ".trusted-ci/scripts" ]; then
-            echo "CI_SCRIPTS_DIR=.trusted-ci/scripts" >> "$GITHUB_ENV"
-          else
-            echo "Error: Trusted CI scripts directory .trusted-ci/scripts not found." >&2
+          if [ ! -d ".trusted-ci/scripts" ]; then
+            echo "::error::Trusted CI scripts not found at .trusted-ci/scripts; refusing to fall back to untrusted workspace scripts."
             exit 1
           fi
+          mv .trusted-ci "$RUNNER_TEMP/trusted-ci"
+          echo "CI_SCRIPTS_DIR=$RUNNER_TEMP/trusted-ci/scripts" >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v7

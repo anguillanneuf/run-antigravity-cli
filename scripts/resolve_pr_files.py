@@ -11,7 +11,7 @@ DEFAULT_SUPPORTED_EXTENSIONS: List[str] = [
 ]
 
 DEFAULT_EXCLUDE_DIRS: List[str] = [
-    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__", ".github"
+    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__"
 ]
 
 DEFAULT_EXCLUDE_FILES: List[str] = [

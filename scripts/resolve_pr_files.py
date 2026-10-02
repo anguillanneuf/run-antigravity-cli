@@ -7,7 +7,7 @@ import subprocess
 from typing import List, Optional
 
 DEFAULT_SUPPORTED_EXTENSIONS: List[str] = [
-    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php"
+    ".py", ".java", ".go", ".js", ".ts", ".c", ".cc", ".cpp", ".h", ".rb", ".php", ".yaml", ".yml"
 ]
 
 DEFAULT_EXCLUDE_DIRS: List[str] = [

@@ -266,5 +266,5 @@ jobs:
             --scan-mode "$SCAN_MODE" \
             "${EXTRA_ARGS[@]}" \
             --repo "$REPO" \
-            --pr-number "$PR_NUMBER" \
+            --pr-number "$PR_NUMBER"
 

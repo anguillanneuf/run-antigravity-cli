@@ -246,7 +246,7 @@ jobs:
       - name: Publish CodeMender Scan Report
         if: always()
         env:
-          SCAN_EXIT_CODE: ${{ steps.cm-scan.outputs.scan_exit_code || '0' }}
+          SCAN_EXIT_CODE: ${{ steps.cm-scan.outputs.scan_exit_code || '1' }}
           FILES: ${{ steps.resolve-files.outputs.files }}
           SCAN_MODE: ${{ inputs.scan_mode || 'diff' }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}

@@ -10,7 +10,7 @@ DEFAULT_SCAN_EXTENSIONS: List[str] = [
 ]
 
 DEFAULT_EXCLUDE_DIRS: List[str] = [
-    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__"
+    "node_modules", "vendor", "dist", "bin", ".git", ".venv", "__pycache__", ".codemender"
 ]
 
 DEFAULT_EXCLUDE_FILES: List[str] = [

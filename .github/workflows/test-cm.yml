@@ -298,3 +298,23 @@ jobs:
             --repo "$REPO" \
             --pr-number "$PR_NUMBER"
 
+      # -------------------------------------------------------------------------
+      # Enforce Security Gate
+      # -------------------------------------------------------------------------
+      # The cm-scan step deliberately exits 0 so the report always publishes;
+      # this step propagates the captured scanner exit code so the job (and
+      # any branch protection rule on it) actually fails on blocking findings.
+      - name: Enforce Security Gate
+        env:
+          SCAN_EXIT_CODE: ${{ steps.cm-scan.outputs.scan_exit_code || '1' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          if [ "$DRY_RUN" = "true" ] || [ "$DRY_RUN" = "True" ]; then
+            echo "Dry-run mode: skipping security gate enforcement."
+          elif [ "$SCAN_EXIT_CODE" -ne 0 ]; then
+            echo "::error::CodeMender reported blocking findings or a scan failure (exit code $SCAN_EXIT_CODE)."
+            exit "$SCAN_EXIT_CODE"
+          else
+            echo "Security gate passed: no blocking findings."
+          fi
+

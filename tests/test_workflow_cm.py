@@ -48,14 +48,18 @@ def test_workflow_content_and_structure():
     assert "codemender-cli-production" in content
 
     # Verify referenced scripts and sandboxing config
-    assert "scripts/setup_cm_config.py" in content
-    assert "scripts/resolve_pr_files.py" in content
-    assert "scripts/report_cm_results.py" in content
+    assert "setup_cm_config.py" in content
+    assert "resolve_pr_files.py" in content
+    assert "report_cm_results.py" in content
     assert "~/.codemender/config.yaml" in content
     assert "--project-paths" in content
     assert "--sync-workspace" in content
     assert "--absolute" in content
-    assert 'cm find "$(pwd)"' in content
+    assert "cm find ." in content
+    assert "--diff=" in content
+    assert "--diff-workers=" in content
+    assert "--fail-on=" in content
+    assert "--deep" in content
 
 
 def test_referenced_scripts_exist_and_executable():

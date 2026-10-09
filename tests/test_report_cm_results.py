@@ -147,3 +147,24 @@ def test_main_cli(tmp_path, monkeypatch):
     main()
     assert summary_file.exists()
     assert "Scan finished 0 issues found" in summary_file.read_text()
+
+
+def test_main_cli_deep_mode(tmp_path, monkeypatch):
+    log_file = tmp_path / "deep_scan.log"
+    log_file.write_text("Deep scan finished 0 issues found")
+    summary_file = tmp_path / "summary_deep.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
+    monkeypatch.setattr("sys.argv", [
+        "report_cm_results.py",
+        "--output-file", str(log_file),
+        "--exit-code", "0",
+        "--files", "src/main.py",
+        "--scan-mode", "deep",
+        "--pr-number", "",
+    ])
+    
+    main()
+    assert summary_file.exists()
+    content = summary_file.read_text()
+    assert "- **Scan Mode:** `deep`" in content
+    assert "Deep scan finished 0 issues found" in content

@@ -194,9 +194,12 @@ This repository also includes automated cybersecurity vulnerability scanning pow
 1. **Keyless Authentication & ADC Generation**: Uses Google Cloud Workload Identity Federation (WIF) with `google-github-actions/auth@v3` (`create_credentials_file: true`, `export_environment_variables: true`) to generate Application Default Credentials (ADC) and export `GOOGLE_CLOUD_PROJECT` for CodeMender.
 2. **Autonomous Tool Setup & Caching**: Downloads and caches the CodeMender Linux CLI binary directly from Google Artifact Registry.
 3. **Headless CI Configuration**: Automatically generates non-interactive `~/.codemender/config.yaml` with safety confirmations bypassed and sandbox disabled for CI/container runners.
-4. **Target File Resolution**: Dynamically calculates modified files from the Pull Request diff and resolves absolute paths for supported programming language extensions.
-5. **Vulnerability Discovery**: Executes `cm find` on the changed files with absolute paths (or full workspace root).
-6. **Actionable Reporting**: Publishes structured findings to `$GITHUB_STEP_SUMMARY` and posts/updates an interactive PR comment.
+4. **Native Diff Analysis & Impact Tracing**: In Pull Request workflows, executes native `cm find . --diff="origin/$BASE_REF"`:
+   - Scopes vulnerability discovery to modified line ranges and newly introduced diff hunks.
+   - Performs automated symbol and AST impact analysis to inspect untouched caller/callee files that depend on modified functions.
+   - Automatically suppresses pre-existing legacy vulnerabilities in untouched code so they don't block the pull request.
+   - Distributes parallel audit workers (`--diff-workers=4`) and gates merges on critical/high severities (`--fail-on="CRITICAL,HIGH"`).
+5. **Actionable Reporting**: Publishes structured findings to `$GITHUB_STEP_SUMMARY` and posts/updates an interactive PR comment with diff details and status.
 
 ### 🛡️ Sandboxing & CI Runner Configuration
 If you are running CodeMender inside an ephemeral Docker container or CI runner (which is already isolated), configure `project_paths: ["."]` and disable namespace sandboxing in `~/.codemender/config.yaml`:
@@ -207,7 +210,7 @@ sandbox:
   enabled: false
 ```
 
-Setting `project_paths: ["."]` declares the repository workspace as an allowed filesystem root, allowing CodeMender's agent to inspect parent directories, imported modules, and related project context during scans without triggering sandbox violation warnings. Always pass absolute paths (e.g. `cm find $(pwd)/src`) when invoking the CLI.
+Setting `project_paths: ["."]` declares the repository workspace as an allowed filesystem root, allowing CodeMender's agent to inspect parent directories, imported modules, and related project context during scans without triggering sandbox violation warnings. Always pass `--sandbox=false` or `--unrestricted` when invoking the CLI in CI.
 
 ### GCP IAM Permissions & Repository Variables
 Grant the Workload Identity Federation Service Account the following IAM role:
@@ -221,7 +224,10 @@ Configure the following GitHub repository variables in **Settings > Secrets and 
 
 ### Manual Triggering (`workflow_dispatch`)
 You can trigger a scan manually with custom inputs from GitHub Actions:
-* `scan_mode`: `diff` (only modified files in PR/branch) or `full` (full workspace scan).
+* `scan_mode`:
+  - `diff` (default): Fast PR-focused Git diff scan (`cm find . --diff`) with caller/callee impact analysis and legacy finding isolation.
+  - `full`: Single-session workspace directory scan (`cm find $(pwd)`).
+  - `deep`: Exhaustive repository-wide security audit (`cm find . --deep --deep-workers=8`) for scheduled compliance/release gates.
 * `dry_run`: `true` (validates installation and auth without failing if GCP resources are initializing).
 * `model`: CodeMender model tier (defaults to `gemini-3.5-flash`).
 

@@ -181,7 +181,7 @@ def main() -> None:
     parser.add_argument("--output-file", default=None, help="Path to CodeMender raw log output")
     parser.add_argument("--exit-code", type=int, default=0, help="Exit code of CodeMender CLI process")
     parser.add_argument("--files", nargs="*", default=[], help="Scanned files list")
-    parser.add_argument("--scan-mode", default="diff", choices=["diff", "full"], help="Scan mode")
+    parser.add_argument("--scan-mode", default="diff", choices=["diff", "full", "deep"], help="Scan mode")
     parser.add_argument("--dry-run", action="store_true", default=False, help="Dry run flag")
     parser.add_argument("--repo", default=os.getenv("GITHUB_REPOSITORY", ""), help="owner/repo")
     parser.add_argument("--pr-number", type=_parse_pr_number, default=None, help="PR issue number")

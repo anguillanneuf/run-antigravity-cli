@@ -8,13 +8,14 @@ on:
   workflow_dispatch:
     inputs:
       scan_mode:
-        description: 'Scan mode: diff (PR changed files) or full (workspace)'
+        description: 'Scan mode: diff (native Git diff + caller/callee impact), full (directory scope), or deep (exhaustive audit)'
         required: false
         default: 'diff'
         type: choice
         options:
           - diff
           - full
+          - deep
       dry_run:
         description: 'Run in dry-run preflight mode (validate install and auth)'
         required: false
@@ -187,13 +188,24 @@ jobs:
       # -------------------------------------------------------------------------
       - name: Resolve Target Scan Files
         id: resolve-files
+        env:
+          SCAN_MODE: ${{ inputs.scan_mode || 'diff' }}
+          BASE_REF: ${{ github.base_ref || github.event.repository.default_branch || 'master' }}
         run: |
-          SCAN_MODE="${{ inputs.scan_mode || 'diff' }}"
           FLAGS="--output-github-env --absolute"
-          if [ "$SCAN_MODE" = "full" ]; then
+          if [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "deep" ]; then
             FLAGS="$FLAGS --full"
           else
-            FLAGS="$FLAGS --base-ref origin/${{ github.base_ref || github.event.repository.default_branch }} --head-ref HEAD"
+            DIFF_TARGET="origin/$BASE_REF"
+            if ! git rev-parse --verify "$DIFF_TARGET" >/dev/null 2>&1; then
+              if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+                DIFF_TARGET="$BASE_REF"
+              else
+                DIFF_TARGET="HEAD~1"
+              fi
+            fi
+            FLAGS="$FLAGS --base-ref $DIFF_TARGET --head-ref HEAD"
+            echo "diff_target=$DIFF_TARGET" >> "$GITHUB_OUTPUT"
           fi
           python3 "$CI_SCRIPTS_DIR/resolve_pr_files.py" $FLAGS
 
@@ -204,39 +216,57 @@ jobs:
           FILES: ${{ steps.resolve-files.outputs.files }}
           FILE_COUNT: ${{ steps.resolve-files.outputs.file_count || '0' }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          DIFF_TARGET: ${{ steps.resolve-files.outputs.diff_target }}
         run: |
           set -f
           echo "Starting CodeMender scan (Mode: $SCAN_MODE, Files count: $FILE_COUNT, Dry-run: $DRY_RUN)"
           
+          # NOTE: With no explicit `shell:` key, this step runs under
+          # `bash -e {0}` WITHOUT pipefail (verified in runner logs), so each
+          # `cm find ... | tee` pipeline exits with tee's status (0) and the
+          # separate `SCAN_EXIT_CODE=${PIPESTATUS[0]}` line reliably captures
+          # the scanner's real exit code. Do not append `|| ...` to the
+          # pipelines: without pipefail the `||` branch never runs, silently
+          # re-masking scan failures. The `set +e` guard below is a no-op
+          # today; it only exists so the capture keeps working if an explicit
+          # `shell: bash` (which enables `-o pipefail`) is ever added.
           SCAN_EXIT_CODE=0
           > scan_output.log
+          set +e
           if [ "$DRY_RUN" = "true" ]; then
             echo "Dry-run preflight mode enabled. Skipping live backend invocation." | tee scan_output.log
-          elif [ "$SCAN_MODE" != "full" ] && [ "$FILE_COUNT" -eq 0 ]; then
+          elif [ "$SCAN_MODE" = "diff" ] && [ "$FILE_COUNT" -eq 0 ]; then
             echo "No supported code files changed in this PR. Skipping scan." | tee scan_output.log
           else
-            if [ "$SCAN_MODE" = "full" ]; then
-              # Always pass absolute paths (e.g. cm find $(pwd)) to prevent sandbox root constriction
-              cm find "$(pwd)" 2>&1 | tee -a scan_output.log || SCAN_EXIT_CODE=$?
+            if [ "$SCAN_MODE" = "diff" ]; then
+              # DIFF_TARGET is resolved (with fallbacks) by the resolve-files step
+              echo "Executing CodeMender native diff scan against $DIFF_TARGET (diff hunks + caller/callee impact analysis)..." | tee -a scan_output.log
+              cm find . \
+                --diff="${DIFF_TARGET:-HEAD~1}" \
+                --diff-workers=4 \
+                --fail-on="CRITICAL,HIGH" \
+                --sandbox=false \
+                --yes 2>&1 | tee -a scan_output.log
+              SCAN_EXIT_CODE=${PIPESTATUS[0]}
+            elif [ "$SCAN_MODE" = "deep" ]; then
+              echo "Executing CodeMender exhaustive deep scan across entire repository..." | tee -a scan_output.log
+              cm find . \
+                --deep \
+                --deep-workers=8 \
+                --fail-on="CRITICAL,HIGH" \
+                --sandbox=false \
+                --yes 2>&1 | tee -a scan_output.log
+              SCAN_EXIT_CODE=${PIPESTATUS[0]}
             else
-              for file in $FILES; do
-                # Always pass absolute paths (e.g. cm find $(pwd)/src) when invoking the CLI
-                if [[ "$file" != /* ]]; then
-                  TARGET_PATH="$(pwd)/$file"
-                else
-                  TARGET_PATH="$file"
-                fi
-                if [ -f "$TARGET_PATH" ]; then
-                  echo "=== Scanning $TARGET_PATH ===" | tee -a scan_output.log
-                  FILE_EXIT_CODE=0
-                  cm find "$TARGET_PATH" 2>&1 | tee -a scan_output.log || FILE_EXIT_CODE=$?
-                  if [ "$FILE_EXIT_CODE" -ne 0 ]; then
-                    SCAN_EXIT_CODE=$FILE_EXIT_CODE
-                  fi
-                fi
-              done
+              echo "Executing CodeMender full scan..." | tee -a scan_output.log
+              cm find . \
+                --fail-on="CRITICAL,HIGH" \
+                --sandbox=false \
+                --yes 2>&1 | tee -a scan_output.log
+              SCAN_EXIT_CODE=${PIPESTATUS[0]}
             fi
           fi
+          set -e
 
           echo "scan_exit_code=$SCAN_EXIT_CODE" >> "$GITHUB_OUTPUT"
 
@@ -267,4 +297,24 @@ jobs:
             "${EXTRA_ARGS[@]}" \
             --repo "$REPO" \
             --pr-number "$PR_NUMBER"
+
+      # -------------------------------------------------------------------------
+      # Enforce Security Gate
+      # -------------------------------------------------------------------------
+      # The cm-scan step deliberately exits 0 so the report always publishes;
+      # this step propagates the captured scanner exit code so the job (and
+      # any branch protection rule on it) actually fails on blocking findings.
+      - name: Enforce Security Gate
+        env:
+          SCAN_EXIT_CODE: ${{ steps.cm-scan.outputs.scan_exit_code || '1' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          if [ "$DRY_RUN" = "true" ] || [ "$DRY_RUN" = "True" ]; then
+            echo "Dry-run mode: skipping security gate enforcement."
+          elif [ "$SCAN_EXIT_CODE" -ne 0 ]; then
+            echo "::error::CodeMender reported blocking findings or a scan failure (exit code $SCAN_EXIT_CODE)."
+            exit "$SCAN_EXIT_CODE"
+          else
+            echo "Security gate passed: no blocking findings."
+          fi
 

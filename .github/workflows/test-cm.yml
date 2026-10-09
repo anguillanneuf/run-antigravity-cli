@@ -221,16 +221,18 @@ jobs:
           set -f
           echo "Starting CodeMender scan (Mode: $SCAN_MODE, Files count: $FILE_COUNT, Dry-run: $DRY_RUN)"
           
-          # NOTE: This step runs under GitHub's default shell for unspecified
-          # `shell:` (`bash -e {0}`), which does NOT enable pipefail. Each
-          # `cm find ... | tee` pipeline therefore exits with tee's status (0),
-          # so `set -e` cannot abort mid-scan and the following
-          # `SCAN_EXIT_CODE=${PIPESTATUS[0]}` line reliably captures the
-          # scanner's real exit code. Do not append `|| ...` to the pipelines:
-          # without pipefail the `||` branch never runs, which silently
-          # re-masks scan failures.
+          # NOTE: With no explicit `shell:` key, this step runs under
+          # `bash -e {0}` WITHOUT pipefail (verified in runner logs), so each
+          # `cm find ... | tee` pipeline exits with tee's status (0) and the
+          # separate `SCAN_EXIT_CODE=${PIPESTATUS[0]}` line reliably captures
+          # the scanner's real exit code. Do not append `|| ...` to the
+          # pipelines: without pipefail the `||` branch never runs, silently
+          # re-masking scan failures. The `set +e` guard below is a no-op
+          # today; it only exists so the capture keeps working if an explicit
+          # `shell: bash` (which enables `-o pipefail`) is ever added.
           SCAN_EXIT_CODE=0
           > scan_output.log
+          set +e
           if [ "$DRY_RUN" = "true" ]; then
             echo "Dry-run preflight mode enabled. Skipping live backend invocation." | tee scan_output.log
           elif [ "$SCAN_MODE" = "diff" ] && [ "$FILE_COUNT" -eq 0 ]; then
@@ -264,6 +266,7 @@ jobs:
               SCAN_EXIT_CODE=${PIPESTATUS[0]}
             fi
           fi
+          set -e
 
           echo "scan_exit_code=$SCAN_EXIT_CODE" >> "$GITHUB_OUTPUT"
 

@@ -226,7 +226,7 @@ Configure the following GitHub repository variables in **Settings > Secrets and 
 You can trigger a scan manually with custom inputs from GitHub Actions:
 * `scan_mode`:
   - `diff` (default): Fast PR-focused Git diff scan (`cm find . --diff`) with caller/callee impact analysis and legacy finding isolation.
-  - `full`: Single-session workspace directory scan (`cm find $(pwd)`).
+  - `full`: Single-session workspace directory scan (`cm find .`).
   - `deep`: Exhaustive repository-wide security audit (`cm find . --deep --deep-workers=8`) for scheduled compliance/release gates.
 * `dry_run`: `true` (validates installation and auth without failing if GCP resources are initializing).
 * `model`: CodeMender model tier (defaults to `gemini-3.5-flash`).

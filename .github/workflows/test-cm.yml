@@ -205,6 +205,7 @@ jobs:
               fi
             fi
             FLAGS="$FLAGS --base-ref $DIFF_TARGET --head-ref HEAD"
+            echo "diff_target=$DIFF_TARGET" >> "$GITHUB_OUTPUT"
           fi
           python3 "$CI_SCRIPTS_DIR/resolve_pr_files.py" $FLAGS
 
@@ -215,7 +216,7 @@ jobs:
           FILES: ${{ steps.resolve-files.outputs.files }}
           FILE_COUNT: ${{ steps.resolve-files.outputs.file_count || '0' }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
-          BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+          DIFF_TARGET: ${{ steps.resolve-files.outputs.diff_target }}
         run: |
           set -f
           echo "Starting CodeMender scan (Mode: $SCAN_MODE, Files count: $FILE_COUNT, Dry-run: $DRY_RUN)"
@@ -228,22 +229,15 @@ jobs:
             echo "No supported code files changed in this PR. Skipping scan." | tee scan_output.log
           else
             if [ "$SCAN_MODE" = "diff" ]; then
-              # Determine base ref for diff mode with impact analysis
-              DIFF_TARGET="origin/$BASE_REF"
-              if ! git rev-parse --verify "$DIFF_TARGET" >/dev/null 2>&1; then
-                if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
-                  DIFF_TARGET="$BASE_REF"
-                else
-                  DIFF_TARGET="HEAD~1"
-                fi
-              fi
+              # DIFF_TARGET is resolved (with fallbacks) by the resolve-files step
               echo "Executing CodeMender native diff scan against $DIFF_TARGET (diff hunks + caller/callee impact analysis)..." | tee -a scan_output.log
               cm find . \
                 --diff="$DIFF_TARGET" \
                 --diff-workers=4 \
                 --fail-on="CRITICAL,HIGH" \
                 --sandbox=false \
-                --yes 2>&1 | tee -a scan_output.log || SCAN_EXIT_CODE=$?
+                --yes 2>&1 | tee -a scan_output.log
+              SCAN_EXIT_CODE=${PIPESTATUS[0]}
             elif [ "$SCAN_MODE" = "deep" ]; then
               echo "Executing CodeMender exhaustive deep scan across entire repository..." | tee -a scan_output.log
               cm find . \
@@ -251,13 +245,15 @@ jobs:
                 --deep-workers=8 \
                 --fail-on="CRITICAL,HIGH" \
                 --sandbox=false \
-                --yes 2>&1 | tee -a scan_output.log || SCAN_EXIT_CODE=$?
+                --yes 2>&1 | tee -a scan_output.log
+              SCAN_EXIT_CODE=${PIPESTATUS[0]}
             else
               echo "Executing CodeMender full scan..." | tee -a scan_output.log
               cm find . \
                 --fail-on="CRITICAL,HIGH" \
                 --sandbox=false \
-                --yes 2>&1 | tee -a scan_output.log || SCAN_EXIT_CODE=$?
+                --yes 2>&1 | tee -a scan_output.log
+              SCAN_EXIT_CODE=${PIPESTATUS[0]}
             fi
           fi
 

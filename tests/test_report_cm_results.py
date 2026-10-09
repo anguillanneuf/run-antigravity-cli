@@ -111,7 +111,7 @@ def test_post_new_pr_comment():
 def test_publish_scan_report(tmp_path, monkeypatch):
     step_summary_file = tmp_path / "step_summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(step_summary_file))
-    
+
     with patch("scripts.report_cm_results.post_or_update_pr_comment") as mock_post:
         mock_post.return_value = True
         publish_scan_report(
@@ -124,7 +124,7 @@ def test_publish_scan_report(tmp_path, monkeypatch):
             pr_number=10,
             token="test_token",
         )
-    
+
     assert step_summary_file.exists()
     content = step_summary_file.read_text(encoding="utf-8")
     assert "CodeMender Security Scan Report" in content
@@ -143,7 +143,7 @@ def test_main_cli(tmp_path, monkeypatch):
         "--scan-mode", "diff",
         "--pr-number", "",
     ])
-    
+
     main()
     assert summary_file.exists()
     assert "Scan finished 0 issues found" in summary_file.read_text()
@@ -162,7 +162,7 @@ def test_main_cli_deep_mode(tmp_path, monkeypatch):
         "--scan-mode", "deep",
         "--pr-number", "",
     ])
-    
+
     main()
     assert summary_file.exists()
     content = summary_file.read_text()

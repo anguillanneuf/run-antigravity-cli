@@ -75,6 +75,17 @@ async def main_async() -> (
     except ValueError:
         min_confidence = 4
 
+    enable_verifier_str = (
+        (
+            os.environ.get("INPUT_ENABLE-VERIFIER")
+            or os.environ.get("INPUT_ENABLE_VERIFIER")
+            or "true"
+        )
+        .strip()
+        .lower()
+    )
+    enable_verifier = enable_verifier_str in ["true", "1", "yes"]
+
     max_diff_lines_raw = (
         os.environ.get("INPUT_MAX-DIFF-LINES")
         or os.environ.get("INPUT_MAX_DIFF_LINES")
@@ -181,6 +192,7 @@ async def main_async() -> (
             gcp_location=gcp_location,
             custom_prompt=custom_prompt,
             model=model,
+            enable_verifier=enable_verifier,
         )
         comments = await engine.run_review(
             diff_text,
@@ -188,6 +200,7 @@ async def main_async() -> (
             file_contexts=file_contexts,
             min_severity=min_severity,
             min_confidence=min_confidence,
+            enable_verifier=enable_verifier,
         )
 
         if not comments:

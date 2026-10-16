@@ -680,4 +680,3 @@ async def test_verifier_resilience_fallback_on_error(mock_agent_cls):
     assert len(comments) == 1
     assert comments[0]["line"] == 50
     assert "Command injection" in comments[0]["body"]
-

@@ -89,6 +89,7 @@ async def test_entrypoint_pull_request_success(
             gcp_location=None,
             custom_prompt="Review carefully.",
             model=None,
+            enable_verifier=True,
         )
         mock_engine.run_review.assert_called_once_with(
             "mock-diff-patch",
@@ -96,6 +97,7 @@ async def test_entrypoint_pull_request_success(
             file_contexts=ANY,
             min_severity="HIGH",
             min_confidence=4,
+            enable_verifier=True,
         )
         mock_client.post_review_comments.assert_called_once_with(
             pr_number=42,
@@ -321,6 +323,7 @@ async def test_entrypoint_wif_auth_inputs(
                 gcp_location="us-central1",
                 custom_prompt=None,
                 model=None,
+                enable_verifier=True,
             )
 
 
@@ -449,6 +452,7 @@ async def test_entrypoint_pull_request_with_custom_thresholds(
                 file_contexts=ANY,
                 min_severity="CRITICAL",
                 min_confidence=5,
+                enable_verifier=True,
             )
             # Verify badge was attached to PR comment body
             mock_client.post_review_comments.assert_called_once()
@@ -459,3 +463,45 @@ async def test_entrypoint_pull_request_with_custom_thresholds(
                 "**[CRITICAL | Confidence: 5/5 | SECURITY]**"
                 in called_comments[0]["body"]
             )
+
+
+@pytest.mark.asyncio
+@patch("src.entrypoint.GitHubEventContext.from_env")
+@patch("src.entrypoint.GitHubClient")
+@patch("src.entrypoint.AntigravityReviewEngine")
+async def test_entrypoint_enable_verifier_false(
+    mock_engine_cls, mock_client_cls, mock_context_from_env
+):
+    """Verify that INPUT_ENABLE_VERIFIER=false disables verifier in engine and run_review."""
+    from src.entrypoint import main_async
+
+    with patch.dict(
+        os.environ,
+        {
+            "INPUT_ENABLE_VERIFIER": "false",
+        },
+    ):
+        mock_context = MagicMock(spec=GitHubEventContext)
+        mock_context.event_name = "pull_request"
+        mock_context.pr_number = 102
+        mock_context.repo_owner = "google"
+        mock_context.repo_name = "run-antigravity-cli"
+        mock_context.token = "mock-token"
+        mock_context_from_env.return_value = mock_context
+
+        mock_client = MagicMock(spec=GitHubClient)
+        mock_client.fetch_pr_diff.return_value = "mock-diff-patch"
+        mock_client.post_review_comments.return_value = True
+        mock_client_cls.return_value = mock_client
+
+        mock_engine = MagicMock(spec=AntigravityReviewEngine)
+        mock_engine.run_review = AsyncMock(return_value=[])
+        mock_engine_cls.return_value = mock_engine
+
+        with patch("src.entrypoint.parse_diff_to_changed_lines") as mock_parse_diff:
+            mock_parse_diff.return_value = {"src/main.py": [1]}
+            exit_code = await main_async()
+
+            assert exit_code == 0
+            assert mock_engine_cls.call_args.kwargs["enable_verifier"] is False
+            assert mock_engine.run_review.call_args.kwargs["enable_verifier"] is False

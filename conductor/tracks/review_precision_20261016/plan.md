@@ -1,6 +1,6 @@
 # Implementation Plan: Review Engine Precision & Shift-Left Tooling (`plan.md`)
 
-## Phase 1: Severity & Confidence Thresholding (FR-1)
+## Phase 1: Severity & Confidence Thresholding (FR-1) [checkpoint: bccb0ef]
 - [x] Task: Write failing unit tests for candidate schema parsing and threshold filtering (TDD Red) [afe4215]
   - [x] Write unit tests for schema parsing with `severity` and `confidence` fields
   - [x] Write unit tests for `min_severity` and `min_confidence` filtering logic in `AntigravityReviewEngine`
@@ -10,10 +10,10 @@
   - [x] Implement `_filter_threshold_comments()` in `src/review_engine.py`
   - [x] Update `src/entrypoint.py` to read `INPUT_MIN_SEVERITY` and `INPUT_MIN_CONFIDENCE`
   - [x] Verify all Phase 1 tests pass with >80% coverage
-- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [bccb0ef]
 
 ## Phase 2: Context-Aware File Expansion (FR-3)
-- [ ] Task: Write failing unit tests for file context resolution (TDD Red)
+- [~] Task: Write failing unit tests for file context resolution (TDD Red)
   - [ ] Write unit tests for loading whole files (<1,000 lines) from repository/workspace
   - [ ] Write unit tests for windowed context slicing (>=1,000 lines, 100-line padding around diff hunks)
   - [ ] Write unit tests for missing file fallback to diff-only context

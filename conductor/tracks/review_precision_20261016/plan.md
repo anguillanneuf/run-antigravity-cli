@@ -44,11 +44,11 @@
   - [x] Write unit tests for CLI output rendering, color-coding, and exit codes
   - [x] Write unit tests for `--install-hook` writing executable `.git/hooks/pre-push`
   - [x] Verify test suite fails as expected
-- [~] Task: Implement `scripts/local_review.py` CLI (TDD Green)
-  - [ ] Create `scripts/local_review.py` with argparse interface
-  - [ ] Integrate local Antigravity review engine leasing and local file context
-  - [ ] Implement terminal renderer and pre-push hook installer
-  - [ ] Verify all Phase 4 tests pass with >80% coverage
+- [x] Task: Implement `scripts/local_review.py` CLI (TDD Green) [acf5e83]
+  - [x] Create `scripts/local_review.py` with argparse interface
+  - [x] Integrate local Antigravity review engine leasing and local file context
+  - [x] Implement terminal renderer and pre-push hook installer
+  - [x] Verify all Phase 4 tests pass with >80% coverage
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 5: Action Metadata, Workflows & End-to-End Validation (FR-5)

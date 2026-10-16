@@ -6,19 +6,28 @@ import re
 from contextlib import asynccontextmanager
 from google.antigravity import Agent, LocalAgentConfig, CapabilitiesConfig
 
+SEVERITY_LEVELS = {
+    "LOW": 1,
+    "MEDIUM": 2,
+    "HIGH": 3,
+    "CRITICAL": 4,
+}
+
 DEFAULT_SYSTEM_INSTRUCTIONS = (
     "You are an elite automated code review agent. "
     "Your objective is to perform high-quality, precise, and secure "
     "code reviews on Pull Request diffs.\n\n"
     "Instructions:\n"
     "1. You will be provided with the raw unified diff format of the code changes.\n"
-    "2. For any bug, security issue, styling inconsistency, or performance concern, "
-    "you should generate a specific code review comment.\n"
-    "3. Output format MUST be a raw JSON array of objects with exactly three fields:\n"
+    "2. For any genuine bug, security vulnerability, severe performance regression, or code defect, "
+    "generate a specific code review comment.\n"
+    "3. Output format MUST be a raw JSON array of objects with the following fields:\n"
     "   - 'path': (string) the file path relative to repository root.\n"
-    "   - 'line': (integer) the exact line number in the target/new file "
-    "where the suggestion is.\n"
-    "   - 'body': (string) the markdown suggestions. Include suggestion blocks if useful.\n"
+    "   - 'line': (integer) the exact line number in the target/new file where the suggestion applies.\n"
+    "   - 'severity': (string) one of 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'.\n"
+    "   - 'confidence': (integer) confidence score from 1 (speculative/uncertain) to 5 (verified/definite flaw).\n"
+    "   - 'category': (string) one of 'SECURITY', 'BUG', 'PERFORMANCE', 'CODE_QUALITY'.\n"
+    "   - 'body': (string) the markdown suggestions explaining the finding and proposing actionable fixes. Include suggestion blocks if useful.\n"
     "4. Do NOT output any conversational text. Return ONLY the raw JSON array.\n"
     "5. Do NOT suggest downgrading library or GitHub Action versions unless a verified critical bug exists in that specific version."
 )
@@ -36,6 +45,8 @@ class AntigravityReviewEngine:
         gcp_location=None,
         custom_prompt=None,
         model=None,
+        min_severity=None,
+        min_confidence=None,
     ):
         self.api_key = api_key
         self.workload_identity_provider = workload_identity_provider
@@ -44,6 +55,8 @@ class AntigravityReviewEngine:
         self.gcp_location = gcp_location
         self.custom_prompt = custom_prompt
         self.model = model
+        self.min_severity = min_severity
+        self.min_confidence = min_confidence
 
     def ensure_settings_configured(self):
         """Generates or updates the local settings.json configuration file.
@@ -142,7 +155,13 @@ class AntigravityReviewEngine:
         async with Agent(config) as agent:
             yield agent
 
-    async def run_review(self, diff_text, changed_lines):
+    async def run_review(
+        self,
+        diff_text,
+        changed_lines,
+        min_severity=None,
+        min_confidence=None,
+    ):
         """Executes a code review on the provided diff and filters comments to added/modified lines.
 
         Returns:
@@ -155,7 +174,7 @@ class AntigravityReviewEngine:
             f"Please review the following pull request unified diff:\n\n"
             f"{diff_text}\n\n"
             f"Remember, return ONLY a valid JSON array of objects "
-            f"with fields: 'path', 'line', 'body'."
+            f"with fields: 'path', 'line', 'severity', 'confidence', 'category', 'body'."
         )
 
         try:
@@ -173,7 +192,27 @@ class AntigravityReviewEngine:
                 if not isinstance(comments, list):
                     return []
 
-                return self._filter_valid_comments(comments, changed_lines)
+                valid_comments = self._filter_valid_comments(comments, changed_lines)
+
+                target_min_sev = (
+                    min_severity if min_severity is not None else self.min_severity
+                )
+                target_min_conf = (
+                    min_confidence
+                    if min_confidence is not None
+                    else self.min_confidence
+                )
+
+                if target_min_sev is not None or target_min_conf is not None:
+                    return self._filter_threshold_comments(
+                        valid_comments,
+                        min_severity=target_min_sev or "HIGH",
+                        min_confidence=target_min_conf
+                        if target_min_conf is not None
+                        else 4,
+                    )
+
+                return valid_comments
         except (json.JSONDecodeError, RuntimeError, ValueError):
             return []
 
@@ -234,6 +273,32 @@ class AntigravityReviewEngine:
 
         return body
 
+    @staticmethod
+    def _filter_threshold_comments(comments, min_severity="HIGH", min_confidence=4):
+        """Filters review comments based on minimum severity and confidence thresholds."""
+        min_sev_str = str(min_severity).upper().strip() if min_severity else "HIGH"
+        min_sev_score = SEVERITY_LEVELS.get(min_sev_str, SEVERITY_LEVELS["HIGH"])
+
+        try:
+            min_conf_val = int(min_confidence) if min_confidence is not None else 4
+        except (ValueError, TypeError):
+            min_conf_val = 4
+
+        filtered = []
+        for c in comments:
+            sev_str = str(c.get("severity", "LOW")).upper().strip()
+            sev_score = SEVERITY_LEVELS.get(sev_str, SEVERITY_LEVELS["LOW"])
+
+            try:
+                conf_val = int(c.get("confidence", 1))
+            except (ValueError, TypeError):
+                conf_val = 1
+
+            if sev_score >= min_sev_score and conf_val >= min_conf_val:
+                filtered.append(c)
+
+        return filtered
+
     def _filter_valid_comments(self, comments, changed_lines):
         """Filters out suggested comments that do not target added/modified lines or files."""
         filtered = []
@@ -248,7 +313,21 @@ class AntigravityReviewEngine:
             # Check if this file was changed and if this line number was modified
             if path in changed_lines and int(line) in changed_lines[path]:
                 validated_body = self._validate_markdown_suggestions(str(body))
-                filtered.append(
-                    {"path": path, "line": int(line), "body": validated_body}
-                )
+                item = {
+                    "path": path,
+                    "line": int(line),
+                    "body": validated_body,
+                }
+                if "severity" in comment:
+                    item["severity"] = str(comment["severity"]).upper().strip()
+                if "confidence" in comment:
+                    try:
+                        item["confidence"] = int(comment["confidence"])
+                    except (ValueError, TypeError):
+                        item["confidence"] = 1
+                if "category" in comment:
+                    item["category"] = str(comment["category"]).upper().strip()
+
+                filtered.append(item)
         return filtered
+

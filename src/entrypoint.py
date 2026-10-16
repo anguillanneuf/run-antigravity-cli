@@ -53,6 +53,20 @@ async def main_async() -> (
         "INPUT_CUSTOM_PROMPT"
     )
     model = os.environ.get("INPUT_MODEL") or os.environ.get("GEMINI_MODEL")
+    min_severity = (
+        os.environ.get("INPUT_MIN-SEVERITY")
+        or os.environ.get("INPUT_MIN_SEVERITY")
+        or "HIGH"
+    )
+    min_confidence_raw = (
+        os.environ.get("INPUT_MIN-CONFIDENCE")
+        or os.environ.get("INPUT_MIN_CONFIDENCE")
+        or "4"
+    )
+    try:
+        min_confidence = int(min_confidence_raw.strip())
+    except ValueError:
+        min_confidence = 4
 
     max_diff_lines_raw = os.environ.get("INPUT_MAX-DIFF-LINES") or os.environ.get(
         "INPUT_MAX_DIFF_LINES"
@@ -147,7 +161,12 @@ async def main_async() -> (
             custom_prompt=custom_prompt,
             model=model,
         )
-        comments = await engine.run_review(diff_text, changed_lines)
+        comments = await engine.run_review(
+            diff_text,
+            changed_lines,
+            min_severity=min_severity,
+            min_confidence=min_confidence,
+        )
 
         if not comments:
             print(
@@ -161,6 +180,15 @@ async def main_async() -> (
         )
 
         # 6. Post comments back to GitHub PR
+        # Format comment body for PR presentation if severity is present and not already formatted
+        for c in comments:
+            if "severity" in c and not c["body"].startswith("**["):
+                badge = f"**[{c.get('severity', 'HIGH')} | Confidence: {c.get('confidence', 4)}/5"
+                if "category" in c:
+                    badge += f" | {c['category']}"
+                badge += "]**\n\n"
+                c["body"] = badge + c["body"]
+
         body_summary = (
             "🤖 **Google Antigravity Code Review**\n\n"
             "I have reviewed the changes in this Pull Request and left inline feedback."

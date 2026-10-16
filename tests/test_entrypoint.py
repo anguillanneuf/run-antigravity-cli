@@ -91,7 +91,10 @@ async def test_entrypoint_pull_request_success(
             model=None,
         )
         mock_engine.run_review.assert_called_once_with(
-            "mock-diff-patch", {"src/main.py": [5]}
+            "mock-diff-patch",
+            {"src/main.py": [5]},
+            min_severity="HIGH",
+            min_confidence=4,
         )
         mock_client.post_review_comments.assert_called_once_with(
             pr_number=42,
@@ -388,4 +391,66 @@ async def test_entrypoint_exceeds_max_diff_files(
             assert exit_code == 0
             # Review engine should NOT have been called due to file count guard
             mock_engine_cls.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("src.entrypoint.GitHubEventContext.from_env")
+@patch("src.entrypoint.GitHubClient")
+@patch("src.entrypoint.AntigravityReviewEngine")
+async def test_entrypoint_pull_request_with_custom_thresholds(
+    mock_engine_cls, mock_client_cls, mock_context_from_env
+):
+    """Verify that custom INPUT_MIN_SEVERITY and INPUT_MIN_CONFIDENCE are forwarded to the review engine."""
+    from src.entrypoint import main_async
+
+    with patch.dict(
+        os.environ,
+        {
+            "INPUT_MIN_SEVERITY": "CRITICAL",
+            "INPUT_MIN_CONFIDENCE": "5",
+        },
+    ):
+        mock_context = MagicMock(spec=GitHubEventContext)
+        mock_context.event_name = "pull_request"
+        mock_context.pr_number = 101
+        mock_context.repo_owner = "google"
+        mock_context.repo_name = "run-antigravity-cli"
+        mock_context.token = "mock-token"
+        mock_context_from_env.return_value = mock_context
+
+        mock_client = MagicMock(spec=GitHubClient)
+        mock_client.fetch_pr_diff.return_value = "mock-diff-patch"
+        mock_client.post_review_comments.return_value = True
+        mock_client_cls.return_value = mock_client
+
+        mock_engine = MagicMock(spec=AntigravityReviewEngine)
+        mock_reviews = [
+            {
+                "path": "src/main.py",
+                "line": 5,
+                "severity": "CRITICAL",
+                "confidence": 5,
+                "category": "SECURITY",
+                "body": "SQL injection vulnerability detected.",
+            }
+        ]
+        mock_engine.run_review = AsyncMock(return_value=mock_reviews)
+        mock_engine_cls.return_value = mock_engine
+
+        with patch("src.entrypoint.parse_diff_to_changed_lines") as mock_parse_diff:
+            mock_parse_diff.return_value = {"src/main.py": [5]}
+            exit_code = await main_async()
+
+            assert exit_code == 0
+            mock_engine.run_review.assert_called_once_with(
+                "mock-diff-patch",
+                {"src/main.py": [5]},
+                min_severity="CRITICAL",
+                min_confidence=5,
+            )
+            # Verify badge was attached to PR comment body
+            mock_client.post_review_comments.assert_called_once()
+            called_comments = mock_client.post_review_comments.call_args.kwargs["comments"]
+            assert "**[CRITICAL | Confidence: 5/5 | SECURITY]**" in called_comments[0]["body"]
+
 

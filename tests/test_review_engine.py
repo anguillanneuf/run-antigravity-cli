@@ -464,3 +464,220 @@ async def test_run_review_with_severity_and_confidence(mock_agent_cls):
     assert comments[0]["confidence"] == 5
     assert comments[0]["category"] == "SECURITY"
     assert "SQL injection" in comments[0]["body"]
+
+
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_two_pass_critic_verifier_workflow(mock_agent_cls):
+    """Verify that Pass 1 generates candidates and Pass 2 filters unverified candidates."""
+    mock_agent = AsyncMock()
+    mock_agent_cls.return_value.__aenter__.return_value = mock_agent
+
+    pass1_response = json.dumps(
+        [
+            {
+                "path": "src/auth.py",
+                "line": 15,
+                "severity": "CRITICAL",
+                "confidence": 5,
+                "category": "SECURITY",
+                "body": "Hardcoded secret key in session config.",
+            },
+            {
+                "path": "src/auth.py",
+                "line": 20,
+                "severity": "HIGH",
+                "confidence": 4,
+                "category": "SECURITY",
+                "body": "Unsanitized parameter passed to internal logger.",
+            },
+        ]
+    )
+    pass2_response = json.dumps(
+        [
+            {
+                "path": "src/auth.py",
+                "line": 15,
+                "severity": "CRITICAL",
+                "confidence": 5,
+                "category": "SECURITY",
+                "body": "Hardcoded secret key in session config.",
+                "verified": True,
+                "rationale": "Genuinely exposed API secret.",
+            },
+            {
+                "path": "src/auth.py",
+                "line": 20,
+                "severity": "HIGH",
+                "confidence": 4,
+                "category": "SECURITY",
+                "body": "Unsanitized parameter passed to internal logger.",
+                "verified": False,
+                "rationale": "False positive: internal logger already masks PII.",
+            },
+        ]
+    )
+
+    mock_agent.chat.side_effect = [
+        MockAgentResponse([pass1_response]),
+        MockAgentResponse([pass2_response]),
+    ]
+
+    engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
+    changed_lines = {"src/auth.py": [15, 20]}
+    file_contexts = {
+        "src/auth.py": "1: import os\n...\n15: SECRET = '123'\n...\n20: logger.info(p)\n"
+    }
+
+    comments = await engine.run_review(
+        diff_text="mock diff",
+        changed_lines=changed_lines,
+        file_contexts=file_contexts,
+        enable_verifier=True,
+    )
+
+    assert mock_agent.chat.call_count == 2
+    assert len(comments) == 1
+    assert comments[0]["line"] == 15
+    assert comments[0]["severity"] == "CRITICAL"
+    assert "Hardcoded secret key" in comments[0]["body"]
+
+
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_verifier_skips_when_zero_candidates(mock_agent_cls):
+    """Verify that Pass 2 is completely skipped when Pass 1 produces no candidates (token optimization)."""
+    mock_agent = AsyncMock()
+    mock_agent_cls.return_value.__aenter__.return_value = mock_agent
+
+    mock_agent.chat.side_effect = [
+        MockAgentResponse(["[]"]),
+    ]
+
+    engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
+    changed_lines = {"src/auth.py": [15]}
+
+    comments = await engine.run_review(
+        diff_text="mock diff",
+        changed_lines=changed_lines,
+        enable_verifier=True,
+    )
+
+    assert mock_agent.chat.call_count == 1
+    assert comments == []
+
+
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_verifier_skips_when_candidates_below_threshold(mock_agent_cls):
+    """Verify that Pass 2 is skipped when all Pass 1 candidates fall below severity/confidence thresholds."""
+    mock_agent = AsyncMock()
+    mock_agent_cls.return_value.__aenter__.return_value = mock_agent
+
+    pass1_response = json.dumps(
+        [
+            {
+                "path": "src/utils.py",
+                "line": 10,
+                "severity": "LOW",
+                "confidence": 2,
+                "category": "CODE_QUALITY",
+                "body": "Variable naming nitpick.",
+            }
+        ]
+    )
+    mock_agent.chat.side_effect = [
+        MockAgentResponse([pass1_response]),
+    ]
+
+    engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
+    changed_lines = {"src/utils.py": [10]}
+
+    comments = await engine.run_review(
+        diff_text="mock diff",
+        changed_lines=changed_lines,
+        min_severity="HIGH",
+        min_confidence=4,
+        enable_verifier=True,
+    )
+
+    assert mock_agent.chat.call_count == 1
+    assert comments == []
+
+
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_verifier_disabled_returns_pass1_candidates(mock_agent_cls):
+    """Verify that when enable_verifier=False, Pass 2 is not called and Pass 1 candidates are returned."""
+    mock_agent = AsyncMock()
+    mock_agent_cls.return_value.__aenter__.return_value = mock_agent
+
+    pass1_response = json.dumps(
+        [
+            {
+                "path": "src/utils.py",
+                "line": 10,
+                "severity": "HIGH",
+                "confidence": 5,
+                "category": "BUG",
+                "body": "Potential off-by-one error.",
+            }
+        ]
+    )
+    mock_agent.chat.side_effect = [
+        MockAgentResponse([pass1_response]),
+    ]
+
+    engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
+    changed_lines = {"src/utils.py": [10]}
+
+    comments = await engine.run_review(
+        diff_text="mock diff",
+        changed_lines=changed_lines,
+        enable_verifier=False,
+    )
+
+    assert mock_agent.chat.call_count == 1
+    assert len(comments) == 1
+    assert comments[0]["line"] == 10
+
+
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_verifier_resilience_fallback_on_error(mock_agent_cls):
+    """Verify that if Pass 2 verifier encounters an error or malformed JSON, it falls back to Pass 1 candidates."""
+    mock_agent = AsyncMock()
+    mock_agent_cls.return_value.__aenter__.return_value = mock_agent
+
+    pass1_response = json.dumps(
+        [
+            {
+                "path": "src/server.py",
+                "line": 50,
+                "severity": "CRITICAL",
+                "confidence": 5,
+                "category": "SECURITY",
+                "body": "Command injection vulnerability.",
+            }
+        ]
+    )
+
+    mock_agent.chat.side_effect = [
+        MockAgentResponse([pass1_response]),
+        MockAgentResponse(["Internal verifier error: non-json payload"]),
+    ]
+
+    engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
+    changed_lines = {"src/server.py": [50]}
+
+    comments = await engine.run_review(
+        diff_text="mock diff",
+        changed_lines=changed_lines,
+        enable_verifier=True,
+    )
+
+    assert mock_agent.chat.call_count == 2
+    assert len(comments) == 1
+    assert comments[0]["line"] == 50
+    assert "Command injection" in comments[0]["body"]
+

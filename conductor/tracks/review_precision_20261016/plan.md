@@ -5,12 +5,12 @@
   - [x] Write unit tests for schema parsing with `severity` and `confidence` fields
   - [x] Write unit tests for `min_severity` and `min_confidence` filtering logic in `AntigravityReviewEngine`
   - [x] Verify test suite fails as expected
-- [~] Task: Implement schema update and threshold filtering in review engine (TDD Green)
-  - [ ] Update `DEFAULT_SYSTEM_INSTRUCTIONS` with explicit severity and confidence format
-  - [ ] Implement `_filter_threshold_comments()` in `src/review_engine.py`
-  - [ ] Update `src/entrypoint.py` to read `INPUT_MIN_SEVERITY` and `INPUT_MIN_CONFIDENCE`
-  - [ ] Verify all Phase 1 tests pass with >80% coverage
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Implement schema update and threshold filtering in review engine (TDD Green) [bccb0ef]
+  - [x] Update `DEFAULT_SYSTEM_INSTRUCTIONS` with explicit severity and confidence format
+  - [x] Implement `_filter_threshold_comments()` in `src/review_engine.py`
+  - [x] Update `src/entrypoint.py` to read `INPUT_MIN_SEVERITY` and `INPUT_MIN_CONFIDENCE`
+  - [x] Verify all Phase 1 tests pass with >80% coverage
+- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Context-Aware File Expansion (FR-3)
 - [ ] Task: Write failing unit tests for file context resolution (TDD Red)

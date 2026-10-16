@@ -13,6 +13,9 @@ from src.github_client import (  # pylint: disable=wrong-import-position
     GitHubClient,
     parse_diff_to_changed_lines,
 )
+from src.context_resolver import (  # pylint: disable=wrong-import-position
+    resolve_contexts_for_diff,
+)
 from src.review_engine import (  # pylint: disable=wrong-import-position
     AntigravityReviewEngine,
 )
@@ -20,7 +23,7 @@ from src.review_engine import (  # pylint: disable=wrong-import-position
 
 async def main_async() -> (
     int
-):  # pylint: disable=too-many-locals,too-many-return-statements,too-many-statements
+):  # pylint: disable=too-many-locals,too-many-return-statements,too-many-statements,too-many-branches
     """Performs the async core execution of the review action.
 
     Returns:
@@ -44,27 +47,60 @@ async def main_async() -> (
         "INPUT_GITHUB_TOKEN"
     )
     fail_on_error_str = (
-        os.environ.get("INPUT_FAIL-ON-ERROR")
-        or os.environ.get("INPUT_FAIL_ON_ERROR")
-        or "true"
-    ).strip().lower()
+        (
+            os.environ.get("INPUT_FAIL-ON-ERROR")
+            or os.environ.get("INPUT_FAIL_ON_ERROR")
+            or "true"
+        )
+        .strip()
+        .lower()
+    )
     fail_on_error = fail_on_error_str in ["true", "1", "yes"]
     custom_prompt = os.environ.get("INPUT_CUSTOM-PROMPT") or os.environ.get(
         "INPUT_CUSTOM_PROMPT"
     )
     model = os.environ.get("INPUT_MODEL") or os.environ.get("GEMINI_MODEL")
+    min_severity = (
+        os.environ.get("INPUT_MIN-SEVERITY")
+        or os.environ.get("INPUT_MIN_SEVERITY")
+        or "HIGH"
+    )
+    min_confidence_raw = (
+        os.environ.get("INPUT_MIN-CONFIDENCE")
+        or os.environ.get("INPUT_MIN_CONFIDENCE")
+        or "4"
+    )
+    try:
+        min_confidence = int(min_confidence_raw.strip())
+    except ValueError:
+        min_confidence = 4
 
-    max_diff_lines_raw = os.environ.get("INPUT_MAX-DIFF-LINES") or os.environ.get(
-        "INPUT_MAX_DIFF_LINES"
-    ) or "2000"
+    enable_verifier_str = (
+        (
+            os.environ.get("INPUT_ENABLE-VERIFIER")
+            or os.environ.get("INPUT_ENABLE_VERIFIER")
+            or "true"
+        )
+        .strip()
+        .lower()
+    )
+    enable_verifier = enable_verifier_str in ["true", "1", "yes"]
+
+    max_diff_lines_raw = (
+        os.environ.get("INPUT_MAX-DIFF-LINES")
+        or os.environ.get("INPUT_MAX_DIFF_LINES")
+        or "2000"
+    )
     try:
         max_diff_lines = int(max_diff_lines_raw.strip())
     except ValueError:
         max_diff_lines = 2000
 
-    max_diff_files_raw = os.environ.get("INPUT_MAX-DIFF-FILES") or os.environ.get(
-        "INPUT_MAX_DIFF_FILES"
-    ) or "50"
+    max_diff_files_raw = (
+        os.environ.get("INPUT_MAX-DIFF-FILES")
+        or os.environ.get("INPUT_MAX_DIFF_FILES")
+        or "50"
+    )
     try:
         max_diff_files = int(max_diff_files_raw.strip())
     except ValueError:
@@ -134,6 +170,16 @@ async def main_async() -> (
 
         print(
             f"Found modifications in {changed_files_count} files ({total_changed_lines} lines). "
+            "Resolving surrounding file contexts..."
+        )
+        file_contexts = resolve_contexts_for_diff(
+            diff_text=diff_text,
+            changed_lines=changed_lines,
+            github_client=client,
+            ref=getattr(context, "head_sha", None),
+        )
+        print(
+            f"Resolved contexts for {len(file_contexts)} files. "
             "Running review engine..."
         )
 
@@ -146,8 +192,16 @@ async def main_async() -> (
             gcp_location=gcp_location,
             custom_prompt=custom_prompt,
             model=model,
+            enable_verifier=enable_verifier,
         )
-        comments = await engine.run_review(diff_text, changed_lines)
+        comments = await engine.run_review(
+            diff_text,
+            changed_lines,
+            file_contexts=file_contexts,
+            min_severity=min_severity,
+            min_confidence=min_confidence,
+            enable_verifier=enable_verifier,
+        )
 
         if not comments:
             print(
@@ -161,6 +215,15 @@ async def main_async() -> (
         )
 
         # 6. Post comments back to GitHub PR
+        # Format comment body for PR presentation if severity is present and not already formatted
+        for c in comments:
+            if "severity" in c and not c["body"].startswith("**["):
+                badge = f"**[{c.get('severity', 'HIGH')} | Confidence: {c.get('confidence', 4)}/5"
+                if "category" in c:
+                    badge += f" | {c['category']}"
+                badge += "]**\n\n"
+                c["body"] = badge + c["body"]
+
         body_summary = (
             "🤖 **Google Antigravity Code Review**\n\n"
             "I have reviewed the changes in this Pull Request and left inline feedback."

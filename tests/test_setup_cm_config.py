@@ -78,11 +78,11 @@ def test_write_cm_config(tmp_path):
         project_id="my-project-id",
         location="europe-west1",
     )
-    
+
     assert os.path.exists(result_path)
     with open(result_path, "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     assert 'project: "my-project-id"' in content
     assert 'location: "europe-west1"' in content
     assert "confirm_commands: false" in content
@@ -93,17 +93,26 @@ def test_write_cm_config(tmp_path):
 
 def test_main_cli(tmp_path, monkeypatch, capsys):
     from scripts.setup_cm_config import main
+
     target = tmp_path / "custom_config.yaml"
-    monkeypatch.setattr("sys.argv", [
-        "setup_cm_config.py",
-        "--output", str(target),
-        "--model", "gemini-3.1-pro",
-        "--format", "json",
-        "--project-id", "cli-proj",
-        "--location", "us-central1",
-    ])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "setup_cm_config.py",
+            "--output",
+            str(target),
+            "--model",
+            "gemini-3.1-pro",
+            "--format",
+            "json",
+            "--project-id",
+            "cli-proj",
+            "--location",
+            "us-central1",
+        ],
+    )
     main()
-    
+
     captured = capsys.readouterr()
     assert "successfully generated" in captured.out
     assert target.exists()
@@ -114,13 +123,18 @@ def test_main_cli(tmp_path, monkeypatch, capsys):
 
 def test_main_cli_with_google_cloud_project_env(tmp_path, monkeypatch, capsys):
     from scripts.setup_cm_config import main
+
     target = tmp_path / "env_config.yaml"
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "env-gcp-project")
     monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
-    monkeypatch.setattr("sys.argv", [
-        "setup_cm_config.py",
-        "--output", str(target),
-    ])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "setup_cm_config.py",
+            "--output",
+            str(target),
+        ],
+    )
     main()
 
     captured = capsys.readouterr()

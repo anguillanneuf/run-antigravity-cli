@@ -10,6 +10,15 @@ import requests
 class GitHubEventContext:
     """Parses and exposes GitHub event metadata from actions runner environment."""
 
+    event_name = ""
+    repo_owner = ""
+    repo_name = ""
+    token = ""
+    pr_number = None
+    head_sha = None
+    base_sha = None
+    is_review_requested = False
+
     def __init__(
         self,
         event_name,
@@ -140,6 +149,20 @@ class GitHubClient:
             "Accept": "application/vnd.github.v3.diff",
         }
         response = requests.get(url, headers=headers, timeout=20)
+        response.raise_for_status()
+        return response.text
+
+    def fetch_file_content(self, path, ref=None):
+        """Fetches the raw content of a file from the repository at a given ref/commit."""
+        url = f"{self.base_url}/contents/{path}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github.v3.raw",
+        }
+        params = {}
+        if ref:
+            params["ref"] = ref
+        response = requests.get(url, headers=headers, params=params, timeout=20)
         response.raise_for_status()
         return response.text
 

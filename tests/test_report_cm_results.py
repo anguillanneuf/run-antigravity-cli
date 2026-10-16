@@ -50,7 +50,9 @@ def test_format_step_summary_dry_run():
 
 
 def test_format_step_summary_findings_detected():
-    findings_output = "Found 1 high severity vulnerability: SQL Injection in handler.py:45"
+    findings_output = (
+        "Found 1 high severity vulnerability: SQL Injection in handler.py:45"
+    )
     summary = format_step_summary(
         scan_output=findings_output,
         exit_code=1,
@@ -77,7 +79,9 @@ def test_format_pr_comment():
 def test_post_or_update_pr_comment():
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_response = MagicMock()
-        mock_response.read.return_value = b'[{"id": 12345, "body": "<!-- codemender-scan-report --> Old report"}]'
+        mock_response.read.return_value = (
+            b'[{"id": 12345, "body": "<!-- codemender-scan-report --> Old report"}]'
+        )
         mock_response.status = 200
         mock_response.__enter__.return_value = mock_response
         mock_urlopen.return_value = mock_response
@@ -94,7 +98,9 @@ def test_post_or_update_pr_comment():
 def test_post_new_pr_comment():
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_response = MagicMock()
-        mock_response.read.return_value = b'[{"id": 99999, "body": "Unrelated comment"}]'
+        mock_response.read.return_value = (
+            b'[{"id": 99999, "body": "Unrelated comment"}]'
+        )
         mock_response.status = 201
         mock_response.__enter__.return_value = mock_response
         mock_urlopen.return_value = mock_response
@@ -135,14 +141,22 @@ def test_main_cli(tmp_path, monkeypatch):
     log_file.write_text("Scan finished 0 issues found")
     summary_file = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
-    monkeypatch.setattr("sys.argv", [
-        "report_cm_results.py",
-        "--output-file", str(log_file),
-        "--exit-code", "0",
-        "--files", "src/main.py",
-        "--scan-mode", "diff",
-        "--pr-number", "",
-    ])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "report_cm_results.py",
+            "--output-file",
+            str(log_file),
+            "--exit-code",
+            "0",
+            "--files",
+            "src/main.py",
+            "--scan-mode",
+            "diff",
+            "--pr-number",
+            "",
+        ],
+    )
 
     main()
     assert summary_file.exists()
@@ -154,14 +168,22 @@ def test_main_cli_deep_mode(tmp_path, monkeypatch):
     log_file.write_text("Deep scan finished 0 issues found")
     summary_file = tmp_path / "summary_deep.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
-    monkeypatch.setattr("sys.argv", [
-        "report_cm_results.py",
-        "--output-file", str(log_file),
-        "--exit-code", "0",
-        "--files", "src/main.py",
-        "--scan-mode", "deep",
-        "--pr-number", "",
-    ])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "report_cm_results.py",
+            "--output-file",
+            str(log_file),
+            "--exit-code",
+            "0",
+            "--files",
+            "src/main.py",
+            "--scan-mode",
+            "deep",
+            "--pr-number",
+            "",
+        ],
+    )
 
     main()
     assert summary_file.exists()

@@ -39,12 +39,12 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [476925f]
 
 ## Phase 4: Shift-Left Local Review CLI & Git Hook (FR-4)
-- [ ] Task: Write failing unit tests for Local Review CLI (TDD Red)
-  - [ ] Write unit tests for git diff resolution (`--staged`, `--branch`, `--working`, `--file`)
-  - [ ] Write unit tests for CLI output rendering, color-coding, and exit codes
-  - [ ] Write unit tests for `--install-hook` writing executable `.git/hooks/pre-push`
-  - [ ] Verify test suite fails as expected
-- [ ] Task: Implement `scripts/local_review.py` CLI (TDD Green)
+- [x] Task: Write failing unit tests for Local Review CLI (TDD Red) [5e5862d]
+  - [x] Write unit tests for git diff resolution (`--staged`, `--branch`, `--working`, `--file`)
+  - [x] Write unit tests for CLI output rendering, color-coding, and exit codes
+  - [x] Write unit tests for `--install-hook` writing executable `.git/hooks/pre-push`
+  - [x] Verify test suite fails as expected
+- [~] Task: Implement `scripts/local_review.py` CLI (TDD Green)
   - [ ] Create `scripts/local_review.py` with argparse interface
   - [ ] Integrate local Antigravity review engine leasing and local file context
   - [ ] Implement terminal renderer and pre-push hook installer

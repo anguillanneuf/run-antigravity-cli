@@ -145,7 +145,7 @@ jobs:
       # -------------------------------------------------------------------------
       - name: Cache CodeMender CLI
         id: cache-cm
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/cm-bin/cm
           key: cm-cli-linux-amd64-stable-v1

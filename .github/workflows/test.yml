@@ -101,6 +101,9 @@ jobs:
           gcp-location: ${{ vars.GCP_LOCATION || 'global' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           model: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          min-severity: ${{ vars.MIN_SEVERITY || 'HIGH' }}
+          min-confidence: ${{ vars.MIN_CONFIDENCE || '4' }}
+          enable-verifier: 'true'
           fail-on-error: true
           custom-prompt: |
             Please analyze the following pull request with extreme care. Focus on:

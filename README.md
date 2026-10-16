@@ -6,9 +6,11 @@ An enterprise-grade, TDD-designed custom GitHub Action that leverages the **Goog
 
 ## 🌟 Key Features
 
-* **AI-Powered Code Reviews**: Analyzes Pull Request diffs for security concerns, logic bugs, performance bottlenecks, and style inconsistencies.
+* **Two-Pass Critic-Verifier Pipeline**: Pass 1 generates candidate findings from the PR diff; Pass 2 acts as an adversarial devil's advocate verifier with surrounding file context to eliminate false positives and pedantic noise.
+* **Context-Aware File Expansion**: Cures diff myopia by automatically loading full file contents (for files < 1,000 lines) or 100-line padded context windows around diff hunks.
+* **Severity & Confidence Thresholding**: Enforces configurable `min-severity` (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) and `min-confidence` (`1`–`5`) thresholds so only high-signal, actionable defects are posted.
+* **Shift-Left Local Review CLI**: Includes `scripts/local_review.py` to run the same two-pass review engine locally against staged, branch, or working-tree changes before pushing, complete with an optional Git `pre-push` hook installer.
 * **Precise Inline Comments**: Automatically leaves feedback as inline review comments targeting the exact lines modified in the PR.
-* **Seamless Local Simulation**: Includes a developer simulation script (`tests/simulate_run.py`) to run and dry-run reviews locally.
 * **Interactive Trigger Command**: Supports triggering reviews on demand by leaving a `/review` comment on Pull Request issues.
 * **Enterprise Security First**: Native support for **Google Cloud Workload Identity Federation (OIDC)**, eliminating the need to manage long-lived API keys or secrets.
 * **Smart Config Merging**: Automatically and safely merges runtime credentials with custom user settings at `~/.gemini/antigravity-cli/settings.json` without destroying existing custom developer configurations.
@@ -24,6 +26,9 @@ An enterprise-grade, TDD-designed custom GitHub Action that leverages the **Goog
 | `workload-identity-provider` | Full GCP Workload Identity Provider resource name for keyless authentication. | No | `""` |
 | `service-account` | GCP Service Account email to impersonate when using Workload Identity Federation. | No | `""` |
 | `custom-prompt` | Additional developer guidelines or review prompts to direct the review agent. | No | `""` |
+| `min-severity` | Minimum severity threshold (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) for reporting comments. | No | `'HIGH'` |
+| `min-confidence` | Minimum confidence score (`1` to `5`) required to report a review comment. | No | `'4'` |
+| `enable-verifier` | Whether to run the Pass 2 Critic-Verifier agent with expanded file context. | No | `'true'` |
 | `fail-on-error` | Whether to fail the workflow run if the orchestration engine throws an error. | No | `false` |
 | `max-diff-lines` | Maximum modified lines allowed in a PR diff before skipping review to avoid resource exhaustion. | No | `'2000'` |
 | `max-diff-files` | Maximum modified files allowed in a PR diff before skipping review to avoid resource exhaustion. | No | `'50'` |
@@ -234,6 +239,33 @@ You can trigger a scan manually with custom inputs from GitHub Actions:
 
 ---
 
+## ⚡ Shift-Left Local Review CLI (`scripts/local_review.py`)
+
+Run the exact same Two-Pass Critic-Verifier review engine and context resolver locally in your terminal before pushing commits to GitHub:
+
+```bash
+# Review staged changes (git diff --cached)
+python scripts/local_review.py --staged
+
+# Review all changes on current branch vs origin/main
+python scripts/local_review.py --branch main
+
+# Review unstaged working tree modifications
+python scripts/local_review.py --working
+
+# Review a single modified file with custom severity/confidence thresholds
+python scripts/local_review.py --staged --file src/review_engine.py --min-severity HIGH --min-confidence 4
+
+# Install an automated Git pre-push hook (.git/hooks/pre-push)
+python scripts/local_review.py --install-hook
+```
+
+Exit codes:
+- `0`: No blocking issues detected above threshold.
+- `1`: One or more verified findings met or exceeded the configured severity and confidence thresholds.
+
+---
+
 ## 💻 Local Simulation and Testing
 
 Developers can test and dry-run the entire review pipeline locally against any public or private pull request without committing to GitHub or triggering live builds.
@@ -268,11 +300,11 @@ python tests/simulate_run.py --help
 We follow a strict TDD methodology with high test coverage and strict lint rules:
 
 ```bash
-# Run the complete test suite with coverage
-pytest --cov=src --cov-report=term-missing
+# Run the complete test suite with coverage across src/ and scripts/
+pytest --cov=src --cov=scripts --cov-report=term-missing
 
 # Run code style formatter
-black src/ tests/
+black src/ scripts/ tests/
 
 # Run the strict code-quality linter
 pylint src/

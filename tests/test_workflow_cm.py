@@ -70,10 +70,34 @@ def test_referenced_scripts_exist_and_executable():
         "scripts/setup_cm_config.py",
         "scripts/resolve_pr_files.py",
         "scripts/report_cm_results.py",
+        "scripts/local_review.py",
     ]
     for script_rel in scripts:
         script_full = os.path.join(base_dir, script_rel)
         assert os.path.exists(script_full), f"Missing script: {script_rel}"
+
+
+def test_action_manifest_and_test_workflow_precision_inputs():
+    base_dir = os.path.join(os.path.dirname(__file__), "..")
+    action_path = os.path.join(base_dir, "action.yml")
+    test_wf_path = os.path.join(base_dir, ".github", "workflows", "test.yml")
+
+    with open(action_path, "r", encoding="utf-8") as f:
+        action_content = f.read()
+
+    assert "min-severity:" in action_content
+    assert "min-confidence:" in action_content
+    assert "enable-verifier:" in action_content
+    assert "INPUT_MIN_SEVERITY:" in action_content
+    assert "INPUT_MIN_CONFIDENCE:" in action_content
+    assert "INPUT_ENABLE_VERIFIER:" in action_content
+
+    with open(test_wf_path, "r", encoding="utf-8") as f:
+        test_wf_content = f.read()
+
+    assert "min-severity:" in test_wf_content
+    assert "min-confidence:" in test_wf_content
+    assert "enable-verifier:" in test_wf_content
 
 
 if __name__ == "__main__":

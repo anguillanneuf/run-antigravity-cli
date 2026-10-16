@@ -43,6 +43,18 @@ inputs:
     description: 'Maximum number of modified files allowed in PR diff before skipping review to avoid resource exhaustion'
     required: false
     default: '50'
+  min-severity:
+    description: 'Minimum severity threshold for reporting review comments (LOW, MEDIUM, HIGH, CRITICAL)'
+    required: false
+    default: 'HIGH'
+  min-confidence:
+    description: 'Minimum confidence score (1 to 5) required to report a review comment'
+    required: false
+    default: '4'
+  enable-verifier:
+    description: 'Whether to run the Pass 2 Critic-Verifier agent to eliminate false positives using full file context'
+    required: false
+    default: 'true'
 runs:
   using: 'composite'
   steps:
@@ -79,6 +91,9 @@ runs:
         INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
         INPUT_MAX_DIFF_LINES: ${{ inputs.max-diff-lines }}
         INPUT_MAX_DIFF_FILES: ${{ inputs.max-diff-files }}
+        INPUT_MIN_SEVERITY: ${{ inputs.min-severity }}
+        INPUT_MIN_CONFIDENCE: ${{ inputs.min-confidence }}
+        INPUT_ENABLE_VERIFIER: ${{ inputs.enable-verifier }}
         PYTHONPATH: ${{ github.action_path }}
         GEMINI_API_KEY: ${{ inputs.api-key }}
         GITHUB_TOKEN: ${{ inputs.github-token }}

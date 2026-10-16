@@ -222,3 +222,59 @@ def test_main_cli_install_hook(tmp_path, monkeypatch):
         main()
     assert exc_info.value.code == 0
     assert (git_hooks / "pre-push").exists()
+
+
+@pytest.mark.asyncio
+@patch("scripts.local_review.get_local_diff")
+async def test_run_local_review_empty_diff(mock_get_diff):
+    """Verify run_local_review exits with 0 immediately when diff is empty."""
+    mock_get_diff.return_value = "   \n"
+    exit_code = await run_local_review(staged=True)
+    assert exit_code == 0
+
+
+def test_render_findings_no_color():
+    """Verify terminal rendering with use_color=False omits ANSI escape codes."""
+    output_empty = render_findings([], use_color=False)
+    assert "\033[" not in output_empty
+    assert "No issues found" in output_empty
+
+    findings = [
+        {
+            "path": "src/auth.py",
+            "line": 10,
+            "severity": "HIGH",
+            "confidence": 4,
+            "category": "BUG",
+            "body": "Null dereference.",
+        }
+    ]
+    output = render_findings(findings, use_color=False)
+    assert "\033[" not in output
+    assert "src/auth.py:10" in output
+
+
+@patch("scripts.local_review.run_local_review", new_callable=AsyncMock)
+def test_main_cli_runs_review(mock_run_review):
+    """Verify main() parses flags and invokes run_local_review."""
+    mock_run_review.return_value = 0
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            [
+                "--staged",
+                "--min-severity",
+                "CRITICAL",
+                "--min-confidence",
+                "5",
+                "--disable-verifier",
+                "--no-color",
+            ]
+        )
+    assert exc_info.value.code == 0
+    mock_run_review.assert_called_once()
+    kwargs = mock_run_review.call_args.kwargs
+    assert kwargs["staged"] is True
+    assert kwargs["min_severity"] == "CRITICAL"
+    assert kwargs["min_confidence"] == 5
+    assert kwargs["enable_verifier"] is False
+    assert kwargs["use_color"] is False

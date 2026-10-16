@@ -1,11 +1,11 @@
 # Implementation Plan: Review Engine Precision & Shift-Left Tooling (`plan.md`)
 
 ## Phase 1: Severity & Confidence Thresholding (FR-1)
-- [ ] Task: Write failing unit tests for candidate schema parsing and threshold filtering (TDD Red)
-  - [ ] Write unit tests for schema parsing with `severity` and `confidence` fields
-  - [ ] Write unit tests for `min_severity` and `min_confidence` filtering logic in `AntigravityReviewEngine`
-  - [ ] Verify test suite fails as expected
-- [ ] Task: Implement schema update and threshold filtering in review engine (TDD Green)
+- [x] Task: Write failing unit tests for candidate schema parsing and threshold filtering (TDD Red) [afe4215]
+  - [x] Write unit tests for schema parsing with `severity` and `confidence` fields
+  - [x] Write unit tests for `min_severity` and `min_confidence` filtering logic in `AntigravityReviewEngine`
+  - [x] Verify test suite fails as expected
+- [~] Task: Implement schema update and threshold filtering in review engine (TDD Green)
   - [ ] Update `DEFAULT_SYSTEM_INSTRUCTIONS` with explicit severity and confidence format
   - [ ] Implement `_filter_threshold_comments()` in `src/review_engine.py`
   - [ ] Update `src/entrypoint.py` to read `INPUT_MIN_SEVERITY` and `INPUT_MIN_CONFIDENCE`

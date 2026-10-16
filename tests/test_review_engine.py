@@ -269,8 +269,15 @@ def test_wif_settings_generation_with_api_key_fallback(mock_file, mock_makedirs,
 @patch("src.review_engine.LocalAgentConfig")
 @patch("src.review_engine.Agent")
 @pytest.mark.asyncio
-async def test_lease_agent_config_auth_modes(mock_agent_cls, mock_local_config_cls):
+async def test_lease_agent_config_auth_modes(mock_agent_cls, mock_local_config_cls, monkeypatch):
     """Verify that _lease_agent passes api_key or vertex/project/location parameters to LocalAgentConfig based on auth mode."""
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+    monkeypatch.delenv("GOOGLE_CLOUD_PROJECT", raising=False)
+    monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
+    monkeypatch.delenv("GCLOUD_PROJECT", raising=False)
+    monkeypatch.delenv("INPUT_MODEL", raising=False)
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+
     # 1. API Key mode
     engine_key = AntigravityReviewEngine(api_key="my-api-key")
     async with engine_key._lease_agent():
@@ -315,5 +322,87 @@ async def test_lease_agent_config_auth_modes(mock_agent_cls, mock_local_config_c
         model="gemini-2.5-pro",
         api_key="my-api-key",
     )
+
+
+def test_filter_threshold_comments():
+    """Verify that _filter_threshold_comments correctly drops findings below severity or confidence threshold."""
+    engine = AntigravityReviewEngine()
+
+    candidates = [
+        {"path": "a.py", "line": 1, "severity": "CRITICAL", "confidence": 5, "category": "SECURITY", "body": "Critical issue"},
+        {"path": "b.py", "line": 2, "severity": "HIGH", "confidence": 4, "category": "BUG", "body": "High issue"},
+        {"path": "c.py", "line": 3, "severity": "HIGH", "confidence": 3, "category": "BUG", "body": "High but low confidence"},
+        {"path": "d.py", "line": 4, "severity": "MEDIUM", "confidence": 5, "category": "CODE_QUALITY", "body": "Medium issue"},
+        {"path": "e.py", "line": 5, "severity": "LOW", "confidence": 5, "category": "CODE_QUALITY", "body": "Low issue"},
+    ]
+
+    # Filter with min_severity=HIGH, min_confidence=4
+    filtered = engine._filter_threshold_comments(candidates, min_severity="HIGH", min_confidence=4)
+    assert len(filtered) == 2
+    assert [c["path"] for c in filtered] == ["a.py", "b.py"]
+
+    # Filter with min_severity=MEDIUM, min_confidence=4
+    filtered_med = engine._filter_threshold_comments(candidates, min_severity="MEDIUM", min_confidence=4)
+    assert len(filtered_med) == 3
+    assert [c["path"] for c in filtered_med] == ["a.py", "b.py", "d.py"]
+
+    # Case-insensitive severity check
+    filtered_case = engine._filter_threshold_comments(candidates, min_severity="high", min_confidence=4)
+    assert len(filtered_case) == 2
+
+
+@patch("src.review_engine.Agent")
+@pytest.mark.asyncio
+async def test_run_review_with_severity_and_confidence(mock_agent_cls):
+    """Verify run_review filters comments using min_severity and min_confidence and preserves metadata fields."""
+    mock_agent = AsyncMock()
+    mock_agent_cls.return_value.__aenter__.return_value = mock_agent
+
+    mock_json_response = json.dumps([
+        {
+            "path": "src/main.py",
+            "line": 5,
+            "severity": "CRITICAL",
+            "confidence": 5,
+            "category": "SECURITY",
+            "body": "SQL injection vulnerability detected.",
+        },
+        {
+            "path": "src/main.py",
+            "line": 6,
+            "severity": "MEDIUM",
+            "confidence": 5,
+            "category": "CODE_QUALITY",
+            "body": "Variable name could be more descriptive.",
+        },
+        {
+            "path": "src/main.py",
+            "line": 7,
+            "severity": "HIGH",
+            "confidence": 2,
+            "category": "BUG",
+            "body": "Speculative race condition.",
+        },
+    ])
+    mock_agent.chat.return_value = MockAgentResponse([mock_json_response])
+
+    engine = AntigravityReviewEngine(api_key="gemini-key-xyz")
+    changed_lines = {"src/main.py": [5, 6, 7]}
+
+    comments = await engine.run_review(
+        diff_text="mock-diff",
+        changed_lines=changed_lines,
+        min_severity="HIGH",
+        min_confidence=4,
+    )
+
+    assert len(comments) == 1
+    assert comments[0]["path"] == "src/main.py"
+    assert comments[0]["line"] == 5
+    assert comments[0]["severity"] == "CRITICAL"
+    assert comments[0]["confidence"] == 5
+    assert comments[0]["category"] == "SECURITY"
+    assert "SQL injection" in comments[0]["body"]
+
 
 

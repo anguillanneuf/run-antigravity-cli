@@ -25,13 +25,13 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [34da59e]
 
 ## Phase 3: Two-Pass Critic-Verifier Pipeline (FR-2)
-- [ ] Task: Write failing unit tests for Critic-Verifier workflow (TDD Red)
-  - [ ] Write unit tests for Pass 1 (Candidate Generation) and Pass 2 (Verification Pass)
-  - [ ] Write unit tests verifying that false alarms and unexploitable findings are pruned
-  - [ ] Write unit tests verifying zero candidates skips Pass 2 (token optimization)
-  - [ ] Write unit tests for verifier failure fallback to filtered candidate list
-  - [ ] Verify test suite fails as expected
-- [ ] Task: Implement Two-Pass Critic-Verifier in Review Engine (TDD Green)
+- [x] Task: Write failing unit tests for Critic-Verifier workflow (TDD Red) [662902f]
+  - [x] Write unit tests for Pass 1 (Candidate Generation) and Pass 2 (Verification Pass)
+  - [x] Write unit tests verifying that false alarms and unexploitable findings are pruned
+  - [x] Write unit tests verifying zero candidates skips Pass 2 (token optimization)
+  - [x] Write unit tests for verifier failure fallback to filtered candidate list
+  - [x] Verify test suite fails as expected
+- [~] Task: Implement Two-Pass Critic-Verifier in Review Engine (TDD Green)
   - [ ] Define `VERIFIER_SYSTEM_INSTRUCTIONS` prompt with devil's advocate scrutiny
   - [ ] Implement `_run_verifier_pass()` in `src/review_engine.py`
   - [ ] Wire two-pass execution into `run_review()` controlled by `enable_verifier`

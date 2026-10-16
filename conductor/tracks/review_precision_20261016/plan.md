@@ -38,7 +38,7 @@
   - [x] Verify all Phase 3 tests pass with >80% coverage
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [476925f]
 
-## Phase 4: Shift-Left Local Review CLI & Git Hook (FR-4)
+## Phase 4: Shift-Left Local Review CLI & Git Hook (FR-4) [checkpoint: acf5e83]
 - [x] Task: Write failing unit tests for Local Review CLI (TDD Red) [5e5862d]
   - [x] Write unit tests for git diff resolution (`--staged`, `--branch`, `--working`, `--file`)
   - [x] Write unit tests for CLI output rendering, color-coding, and exit codes
@@ -49,7 +49,7 @@
   - [x] Integrate local Antigravity review engine leasing and local file context
   - [x] Implement terminal renderer and pre-push hook installer
   - [x] Verify all Phase 4 tests pass with >80% coverage
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [acf5e83]
 
 ## Phase 5: Action Metadata, Workflows & End-to-End Validation (FR-5)
 - [ ] Task: Update Action Manifest and Workflow Configurations

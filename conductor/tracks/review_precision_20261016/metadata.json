@@ -1,0 +1,8 @@
+{
+  "track_id": "review_precision_20261016",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-10-16T17:22:30Z",
+  "updated_at": "2026-10-16T17:22:30Z",
+  "description": "Review Engine Precision & Shift-Left Tooling (Severity/Confidence Filtering, Critic-Verifier Pipeline, Context Expansion, Local Review CLI)"
+}

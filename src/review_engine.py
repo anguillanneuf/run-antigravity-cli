@@ -19,20 +19,22 @@ DEFAULT_SYSTEM_INSTRUCTIONS = (
     "code reviews on Pull Request diffs.\n\n"
     "Instructions:\n"
     "1. You will be provided with the raw unified diff format of the code changes.\n"
-    "2. For any genuine bug, security vulnerability, severe performance regression, or code defect, "
-    "generate a specific code review comment.\n"
+    "2. For any genuine bug, security vulnerability, severe performance regression, "
+    "or code defect, generate a specific code review comment.\n"
     "3. Output format MUST be a raw JSON array of objects with the following fields:\n"
     "   - 'path': (string) the file path relative to repository root.\n"
-    "   - 'line': (integer) the exact line number in the target/new file where the suggestion applies.\n"
+    "   - 'line': (integer) exact line number in target/new file where suggestion applies.\n"
     "   - 'severity': (string) one of 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'.\n"
-    "   - 'confidence': (integer) confidence score from 1 (speculative/uncertain) to 5 (verified/definite flaw).\n"
+    "   - 'confidence': (integer) confidence score 1 (speculative) to 5 (definite flaw).\n"
     "   - 'category': (string) one of 'SECURITY', 'BUG', 'PERFORMANCE', 'CODE_QUALITY'.\n"
-    "   - 'body': (string) the markdown suggestions explaining the finding and proposing actionable fixes. Include suggestion blocks if useful.\n"
+    "   - 'body': (string) markdown suggestions explaining finding and proposing fixes.\n"
     "4. Do NOT output any conversational text. Return ONLY the raw JSON array.\n"
-    "5. Do NOT suggest downgrading library or GitHub Action versions unless a verified critical bug exists in that specific version."
+    "5. Do NOT suggest downgrading library or GitHub Action versions unless a verified "
+    "critical bug exists in that specific version."
 )
 
 
+# pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
 class AntigravityReviewEngine:
     """Interfaces with the Google Antigravity SDK to execute automated code reviews."""
 
@@ -57,6 +59,7 @@ class AntigravityReviewEngine:
         self.model = model
         self.min_severity = min_severity
         self.min_confidence = min_confidence
+        self.last_file_contexts = None
 
     def ensure_settings_configured(self):
         """Generates or updates the local settings.json configuration file.
@@ -115,8 +118,8 @@ class AntigravityReviewEngine:
         if self.model:
             config_kwargs["model"] = self.model
         elif os.environ.get("INPUT_MODEL") or os.environ.get("GEMINI_MODEL"):
-            config_kwargs["model"] = (
-                os.environ.get("INPUT_MODEL") or os.environ.get("GEMINI_MODEL")
+            config_kwargs["model"] = os.environ.get("INPUT_MODEL") or os.environ.get(
+                "GEMINI_MODEL"
             )
 
         if self.api_key:
@@ -159,15 +162,24 @@ class AntigravityReviewEngine:
         self,
         diff_text,
         changed_lines,
+        file_contexts=None,
         min_severity=None,
         min_confidence=None,
     ):
         """Executes a code review on the provided diff and filters comments to added/modified lines.
 
+        Args:
+            diff_text: Unified diff of changes.
+            changed_lines: Mapping of file path to changed line numbers.
+            file_contexts: Optional mapping of file path to surrounding file context.
+            min_severity: Minimum severity threshold ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL').
+            min_confidence: Minimum confidence score to retain (1-5).
+
         Returns:
             list[dict]: A list of verified inline review comments.
         """
         self.ensure_settings_configured()
+        self.last_file_contexts = file_contexts
 
         # Prompt instruction
         prompt = (
@@ -207,9 +219,9 @@ class AntigravityReviewEngine:
                     return self._filter_threshold_comments(
                         valid_comments,
                         min_severity=target_min_sev or "HIGH",
-                        min_confidence=target_min_conf
-                        if target_min_conf is not None
-                        else 4,
+                        min_confidence=(
+                            target_min_conf if target_min_conf is not None else 4
+                        ),
                     )
 
                 return valid_comments
@@ -330,4 +342,3 @@ class AntigravityReviewEngine:
 
                 filtered.append(item)
         return filtered
-

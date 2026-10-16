@@ -185,3 +185,26 @@ def test_post_review_comments(mock_post):
     assert payload["comments"][0]["path"] == "src/entrypoint.py"
     assert payload["comments"][0]["line"] == 4
     assert payload["comments"][0]["side"] == "RIGHT"
+
+
+@patch("requests.get")
+def test_fetch_file_content(mock_get):
+    """Verify fetching file content directly via GitHub API."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = "print('hello from github')\n"
+    mock_get.return_value = mock_response
+
+    client = GitHubClient(token="gh-token-123", repo="google/run-antigravity-cli")
+    content = client.fetch_file_content(path="src/main.py", ref="feature-branch")
+
+    assert content == "print('hello from github')\n"
+    mock_get.assert_called_once_with(
+        "https://api.github.com/repos/google/run-antigravity-cli/contents/src/main.py",
+        headers={
+            "Authorization": "Bearer gh-token-123",
+            "Accept": "application/vnd.github.v3.raw",
+        },
+        params={"ref": "feature-branch"},
+        timeout=20,
+    )

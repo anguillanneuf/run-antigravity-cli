@@ -6,7 +6,9 @@ import re
 import sys
 import pytest
 
-WORKFLOW_PATH = os.path.join(os.path.dirname(__file__), "..", ".github", "workflows", "test-cm.yml")
+WORKFLOW_PATH = os.path.join(
+    os.path.dirname(__file__), "..", ".github", "workflows", "test-cm.yml"
+)
 
 
 def test_workflow_file_exists():
@@ -76,5 +78,5 @@ def test_referenced_scripts_exist_and_executable():
 
 if __name__ == "__main__":
     import pytest
-    sys.exit(pytest.main([__file__]))
 
+    sys.exit(pytest.main([__file__]))

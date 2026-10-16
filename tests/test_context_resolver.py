@@ -168,7 +168,9 @@ def test_resolve_file_context_missing_file_falls_back_to_diff(tmp_path):
     assert "diff" in context.lower() or "fallback" in context.lower()
 
 
-def test_resolve_file_context_missing_file_without_diff_returns_fallback_notice(tmp_path):
+def test_resolve_file_context_missing_file_without_diff_returns_fallback_notice(
+    tmp_path,
+):
     """When a file is completely missing and no diff is provided, returns informative fallback."""
     context = resolve_file_context(
         file_path="completely_missing.py",
@@ -194,7 +196,9 @@ def test_resolve_file_context_github_client_fallback(tmp_path):
         ref="feature-branch",
     )
 
-    mock_client.fetch_file_content.assert_called_once_with("remote_only.py", ref="feature-branch")
+    mock_client.fetch_file_content.assert_called_once_with(
+        "remote_only.py", ref="feature-branch"
+    )
     assert "1: remote_line_1" in context
     assert "10: remote_line_10" in context
 

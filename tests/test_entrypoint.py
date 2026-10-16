@@ -3,7 +3,7 @@
 import os
 import sys
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock, ANY
 from src.github_client import GitHubEventContext, GitHubClient
 from src.review_engine import AntigravityReviewEngine
 
@@ -93,6 +93,7 @@ async def test_entrypoint_pull_request_success(
         mock_engine.run_review.assert_called_once_with(
             "mock-diff-patch",
             {"src/main.py": [5]},
+            file_contexts=ANY,
             min_severity="HIGH",
             min_confidence=4,
         )
@@ -445,12 +446,16 @@ async def test_entrypoint_pull_request_with_custom_thresholds(
             mock_engine.run_review.assert_called_once_with(
                 "mock-diff-patch",
                 {"src/main.py": [5]},
+                file_contexts=ANY,
                 min_severity="CRITICAL",
                 min_confidence=5,
             )
             # Verify badge was attached to PR comment body
             mock_client.post_review_comments.assert_called_once()
-            called_comments = mock_client.post_review_comments.call_args.kwargs["comments"]
-            assert "**[CRITICAL | Confidence: 5/5 | SECURITY]**" in called_comments[0]["body"]
-
-
+            called_comments = mock_client.post_review_comments.call_args.kwargs[
+                "comments"
+            ]
+            assert (
+                "**[CRITICAL | Confidence: 5/5 | SECURITY]**"
+                in called_comments[0]["body"]
+            )

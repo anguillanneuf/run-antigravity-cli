@@ -241,8 +241,17 @@ You can trigger a scan manually with custom inputs from GitHub Actions:
 
 ## ⚡ Shift-Left Local Review CLI (`scripts/local_review.py`)
 
-Run the exact same Two-Pass Critic-Verifier review engine and context resolver locally in your terminal before pushing commits to GitHub:
+Run the exact same Two-Pass Critic-Verifier review engine and context resolver locally in your terminal before pushing commits to GitHub.
 
+### 1. Set Up and Activate the Local Python Virtual Environment
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 2. Run Local Code Reviews
 ```bash
 # Review staged changes (git diff --cached)
 python scripts/local_review.py --staged

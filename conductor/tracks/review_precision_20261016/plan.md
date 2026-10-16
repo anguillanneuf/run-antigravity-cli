@@ -24,7 +24,7 @@
   - [x] Verify all Phase 2 tests pass with >80% coverage
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [34da59e]
 
-## Phase 3: Two-Pass Critic-Verifier Pipeline (FR-2)
+## Phase 3: Two-Pass Critic-Verifier Pipeline (FR-2) [checkpoint: 476925f]
 - [x] Task: Write failing unit tests for Critic-Verifier workflow (TDD Red) [662902f]
   - [x] Write unit tests for Pass 1 (Candidate Generation) and Pass 2 (Verification Pass)
   - [x] Write unit tests verifying that false alarms and unexploitable findings are pruned
@@ -36,7 +36,7 @@
   - [x] Implement `_run_verifier_pass()` in `src/review_engine.py`
   - [x] Wire two-pass execution into `run_review()` controlled by `enable_verifier`
   - [x] Verify all Phase 3 tests pass with >80% coverage
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [476925f]
 
 ## Phase 4: Shift-Left Local Review CLI & Git Hook (FR-4)
 - [ ] Task: Write failing unit tests for Local Review CLI (TDD Red)

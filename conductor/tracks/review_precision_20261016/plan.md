@@ -52,11 +52,11 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [acf5e83]
 
 ## Phase 5: Action Metadata, Workflows & End-to-End Validation (FR-5)
-- [ ] Task: Update Action Manifest and Workflow Configurations
-  - [ ] Update `action.yml` with `min-severity`, `min-confidence`, `enable-verifier`
-  - [ ] Update `.github/workflows/test.yml` with new inputs
-  - [ ] Update `README.md` with architectural details and local CLI instructions
-- [ ] Task: Full Regression and Code Coverage Suite
-  - [ ] Run full test suite: `pytest --cov=src --cov=scripts --cov-report=term-missing`
-  - [ ] Confirm zero regressions and overall code coverage exceeds 80%
+- [x] Task: Update Action Manifest and Workflow Configurations [342b488]
+  - [x] Update `action.yml` with `min-severity`, `min-confidence`, `enable-verifier`
+  - [x] Update `.github/workflows/test.yml` with new inputs
+  - [x] Update `README.md` with architectural details and local CLI instructions
+- [x] Task: Full Regression and Code Coverage Suite [342b488]
+  - [x] Run full test suite: `pytest --cov=src --cov=scripts --cov-report=term-missing`
+  - [x] Confirm zero regressions and overall code coverage exceeds 80%
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)

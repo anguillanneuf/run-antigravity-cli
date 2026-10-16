@@ -94,7 +94,17 @@ class ContextResolver:
 
     def _load_file_lines(self, file_path: str) -> Optional[List[str]]:
         """Attempts to load file lines from local workspace or remote GitHub client."""
-        full_path = os.path.join(self.base_dir, file_path)
+        try:
+            base_dir_resolved = os.path.realpath(self.base_dir)
+            full_path = os.path.realpath(os.path.join(base_dir_resolved, file_path))
+            if (
+                os.path.commonpath([base_dir_resolved, full_path]) != base_dir_resolved
+                or full_path == base_dir_resolved
+            ):
+                return None
+        except (ValueError, TypeError):
+            return None
+
         if os.path.isfile(full_path):
             try:
                 with open(full_path, "r", encoding="utf-8", errors="replace") as f:

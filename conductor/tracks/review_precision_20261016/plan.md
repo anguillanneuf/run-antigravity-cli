@@ -31,11 +31,11 @@
   - [x] Write unit tests verifying zero candidates skips Pass 2 (token optimization)
   - [x] Write unit tests for verifier failure fallback to filtered candidate list
   - [x] Verify test suite fails as expected
-- [~] Task: Implement Two-Pass Critic-Verifier in Review Engine (TDD Green)
-  - [ ] Define `VERIFIER_SYSTEM_INSTRUCTIONS` prompt with devil's advocate scrutiny
-  - [ ] Implement `_run_verifier_pass()` in `src/review_engine.py`
-  - [ ] Wire two-pass execution into `run_review()` controlled by `enable_verifier`
-  - [ ] Verify all Phase 3 tests pass with >80% coverage
+- [x] Task: Implement Two-Pass Critic-Verifier in Review Engine (TDD Green) [476925f]
+  - [x] Define `VERIFIER_SYSTEM_INSTRUCTIONS` prompt with devil's advocate scrutiny
+  - [x] Implement `_run_verifier_pass()` in `src/review_engine.py`
+  - [x] Wire two-pass execution into `run_review()` controlled by `enable_verifier`
+  - [x] Verify all Phase 3 tests pass with >80% coverage
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Shift-Left Local Review CLI & Git Hook (FR-4)

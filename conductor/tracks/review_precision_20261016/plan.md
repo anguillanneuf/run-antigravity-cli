@@ -18,11 +18,11 @@
   - [x] Write unit tests for windowed context slicing (>=1,000 lines, 100-line padding around diff hunks)
   - [x] Write unit tests for missing file fallback to diff-only context
   - [x] Verify test suite fails as expected
-- [~] Task: Implement Context Resolver module (TDD Green)
-  - [ ] Create `src/context_resolver.py` with `resolve_file_context()`
-  - [ ] Integrate context resolution into `src/entrypoint.py`
-  - [ ] Verify all Phase 2 tests pass with >80% coverage
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Implement Context Resolver module (TDD Green) [34da59e]
+  - [x] Create `src/context_resolver.py` with `resolve_file_context()`
+  - [x] Integrate context resolution into `src/entrypoint.py`
+  - [x] Verify all Phase 2 tests pass with >80% coverage
+- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Two-Pass Critic-Verifier Pipeline (FR-2)
 - [ ] Task: Write failing unit tests for Critic-Verifier workflow (TDD Red)

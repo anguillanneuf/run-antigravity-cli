@@ -13,12 +13,12 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [bccb0ef]
 
 ## Phase 2: Context-Aware File Expansion (FR-3)
-- [~] Task: Write failing unit tests for file context resolution (TDD Red)
-  - [ ] Write unit tests for loading whole files (<1,000 lines) from repository/workspace
-  - [ ] Write unit tests for windowed context slicing (>=1,000 lines, 100-line padding around diff hunks)
-  - [ ] Write unit tests for missing file fallback to diff-only context
-  - [ ] Verify test suite fails as expected
-- [ ] Task: Implement Context Resolver module (TDD Green)
+- [x] Task: Write failing unit tests for file context resolution (TDD Red) [d86e8b9]
+  - [x] Write unit tests for loading whole files (<1,000 lines) from repository/workspace
+  - [x] Write unit tests for windowed context slicing (>=1,000 lines, 100-line padding around diff hunks)
+  - [x] Write unit tests for missing file fallback to diff-only context
+  - [x] Verify test suite fails as expected
+- [~] Task: Implement Context Resolver module (TDD Green)
   - [ ] Create `src/context_resolver.py` with `resolve_file_context()`
   - [ ] Integrate context resolution into `src/entrypoint.py`
   - [ ] Verify all Phase 2 tests pass with >80% coverage
